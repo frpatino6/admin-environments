@@ -35,7 +35,7 @@ export class WebsocketService {
       console.log('❌ WebSocket desconectado');
     });
 
-    this.socket.on('connect_error', (error) => {
+    this.socket.on('connect_error', (error: Error) => {
       console.error('❌ Error de conexión WebSocket:', error);
     });
   }

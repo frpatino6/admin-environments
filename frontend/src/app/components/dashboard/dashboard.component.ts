@@ -62,7 +62,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         const index = this.environments.findIndex(e => e._id === updatedEnv._id);
         if (index !== -1) {
           this.environments[index] = updatedEnv;
-          this.showMessage(`🔄 Ambiente ${updatedEnv.name} actualizado`, 2000);
+          this.showMessage(`🔄 Ambiente ${updatedEnv.name} actualizado`);
         } else {
           // Si no existe, agregarlo
           this.environments.push(updatedEnv);
@@ -151,9 +151,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  showMessage(message: string, duration: number = 4000): void {
+  showMessage(message: string): void {
     this.snackBar.open(message, 'Cerrar', {
-      duration: duration,
+      duration: 4000,
       horizontalPosition: 'end',
       verticalPosition: 'top'
     });
