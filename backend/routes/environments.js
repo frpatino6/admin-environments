@@ -57,6 +57,10 @@ router.post('/environments/:name/deploy', async (req, res) => {
     // Enviar notificación a Slack
     await notifyEnvironmentOccupied(environment.name, branch, deployedBy);
 
+    // Emitir evento WebSocket
+    const io = req.app.get('io');
+    io.emit('environment-updated', environment);
+
     res.json(environment);
   } catch (error) {
     res.status(500).json({ message: 'Error al desplegar', error: error.message });
@@ -85,6 +89,10 @@ router.post('/environments/:name/release', async (req, res) => {
 
     // Enviar notificación a Slack
     await notifyEnvironmentReleased(environment.name);
+
+    // Emitir evento WebSocket
+    const io = req.app.get('io');
+    io.emit('environment-updated', environment);
 
     res.json(environment);
   } catch (error) {
