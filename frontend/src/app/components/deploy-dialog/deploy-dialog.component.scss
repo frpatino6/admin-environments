@@ -1,0 +1,35 @@
+h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #1976d2;
+
+  mat-icon {
+    font-size: 2rem;
+    height: 2rem;
+    width: 2rem;
+  }
+}
+
+.dialog-description {
+  margin-bottom: 1.5rem;
+  color: #666;
+  font-size: 1rem;
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+mat-dialog-content {
+  padding-top: 1rem;
+}
+
+mat-dialog-actions {
+  padding: 1rem 1.5rem;
+  
+  button {
+    margin-left: 0.5rem;
+  }
+}

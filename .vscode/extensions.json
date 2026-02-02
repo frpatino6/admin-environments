@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "angular.ng-template",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "mongodb.mongodb-vscode",
+    "rangav.vscode-thunder-client",
+    "ms-vscode.vscode-typescript-next"
+  ]
+}

@@ -1,0 +1,88 @@
+<div class="dashboard-container">
+  <header class="header">
+    <h1>🚀 Admin Ambientes - Dev4 & Test4</h1>
+    <p class="subtitle">Gestión de ambientes de desarrollo en tiempo real</p>
+  </header>
+
+  <div *ngIf="loading" class="loading-container">
+    <mat-spinner></mat-spinner>
+    <p>Cargando ambientes...</p>
+  </div>
+
+  <div *ngIf="!loading" class="environments-grid">
+    <mat-card *ngFor="let env of environments" class="environment-card" [class.occupied]="env.status === 'Ocupado'">
+      <mat-card-header>
+        <mat-card-title>
+          <div class="env-title">
+            <span class="env-name">{{ env.name }}</span>
+            <mat-chip [color]="getStatusColor(env.status)" selected>
+              {{ env.status }}
+            </mat-chip>
+          </div>
+        </mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="env-info">
+          <div class="info-row" *ngIf="env.branch">
+            <mat-icon>code_branch</mat-icon>
+            <div class="info-content">
+              <span class="label">Rama:</span>
+              <span class="value">{{ env.branch }}</span>
+            </div>
+          </div>
+
+          <div class="info-row" *ngIf="env.deployedBy">
+            <mat-icon>person</mat-icon>
+            <div class="info-content">
+              <span class="label">Desplegado por:</span>
+              <span class="value">{{ env.deployedBy }}</span>
+            </div>
+          </div>
+
+          <div class="info-row" *ngIf="env.deployedAt">
+            <mat-icon>schedule</mat-icon>
+            <div class="info-content">
+              <span class="label">Fecha:</span>
+              <span class="value">{{ formatDate(env.deployedAt) }}</span>
+            </div>
+          </div>
+
+          <div class="info-row" *ngIf="env.status === 'Libre'">
+            <mat-icon color="primary">check_circle</mat-icon>
+            <div class="info-content">
+              <span class="value available">Disponible para despliegue</span>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+
+      <mat-card-actions>
+        <button 
+          mat-raised-button 
+          color="primary" 
+          *ngIf="env.status === 'Libre'"
+          (click)="openDeployDialog(env)">
+          <mat-icon>rocket_launch</mat-icon>
+          Desplegar Rama
+        </button>
+
+        <button 
+          mat-raised-button 
+          color="warn" 
+          *ngIf="env.status === 'Ocupado'"
+          (click)="releaseEnvironment(env)">
+          <mat-icon>lock_open</mat-icon>
+          Liberar Ambiente
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+
+  <div class="refresh-section">
+    <button mat-fab extended color="accent" (click)="loadEnvironments()">
+      <mat-icon>refresh</mat-icon>
+      Actualizar
+    </button>
+  </div>
+</div>

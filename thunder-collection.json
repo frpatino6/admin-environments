@@ -1,0 +1,121 @@
+{
+  "clientName": "Thunder Client",
+  "collectionName": "Admin Environments API",
+  "collectionId": "admin-environments",
+  "dateExported": "2026-02-02",
+  "version": "1.0",
+  "requests": [
+    {
+      "name": "Health Check",
+      "method": "GET",
+      "url": "http://localhost:3000/health",
+      "headers": [],
+      "body": {},
+      "tests": []
+    },
+    {
+      "name": "Get All Environments",
+      "method": "GET",
+      "url": "http://localhost:3000/api/environments",
+      "headers": [],
+      "body": {},
+      "tests": []
+    },
+    {
+      "name": "Get dev4 Environment",
+      "method": "GET",
+      "url": "http://localhost:3000/api/environments/dev4",
+      "headers": [],
+      "body": {},
+      "tests": []
+    },
+    {
+      "name": "Get test4 Environment",
+      "method": "GET",
+      "url": "http://localhost:3000/api/environments/test4",
+      "headers": [],
+      "body": {},
+      "tests": []
+    },
+    {
+      "name": "Initialize Environments",
+      "method": "POST",
+      "url": "http://localhost:3000/api/environments/init",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{}"
+      },
+      "tests": []
+    },
+    {
+      "name": "Deploy to dev4",
+      "method": "POST",
+      "url": "http://localhost:3000/api/environments/dev4/deploy",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"branch\": \"feature/nueva-funcionalidad\",\n  \"deployedBy\": \"Juan Pérez\"\n}"
+      },
+      "tests": []
+    },
+    {
+      "name": "Deploy to test4",
+      "method": "POST",
+      "url": "http://localhost:3000/api/environments/test4/deploy",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"branch\": \"integration/testing-phase\",\n  \"deployedBy\": \"María González\"\n}"
+      },
+      "tests": []
+    },
+    {
+      "name": "Release dev4",
+      "method": "POST",
+      "url": "http://localhost:3000/api/environments/dev4/release",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{}"
+      },
+      "tests": []
+    },
+    {
+      "name": "Release test4",
+      "method": "POST",
+      "url": "http://localhost:3000/api/environments/test4/release",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "type": "json",
+        "raw": "{}"
+      },
+      "tests": []
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+<h2 mat-dialog-title>
+  <mat-icon>rocket_launch</mat-icon>
+  Desplegar en {{ data.environmentName }}
+</h2>
+
+<mat-dialog-content>
+  <p class="dialog-description">
+    Completa la información para ocupar el ambiente <strong>{{ data.environmentName }}</strong>
+  </p>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Nombre de la Rama</mat-label>
+    <input 
+      matInput 
+      [(ngModel)]="branch" 
+      placeholder="ej: feature/nueva-funcionalidad"
+      (keyup.enter)="isValid() && onDeploy()">
+    <mat-icon matPrefix>code_branch</mat-icon>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Tu Nombre</mat-label>
+    <input 
+      matInput 
+      [(ngModel)]="deployedBy" 
+      placeholder="ej: Juan Pérez"
+      (keyup.enter)="isValid() && onDeploy()">
+    <mat-icon matPrefix>person</mat-icon>
+  </mat-form-field>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">
+    Cancelar
+  </button>
+  <button 
+    mat-raised-button 
+    color="primary" 
+    (click)="onDeploy()"
+    [disabled]="!isValid()">
+    <mat-icon>check</mat-icon>
+    Desplegar
+  </button>
+</mat-dialog-actions>
