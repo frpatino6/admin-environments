@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Environment = require('../models/Environment');
+const EnvironmentHistory = require('../models/EnvironmentHistory');
 const { notifyEnvironmentOccupied, notifyEnvironmentReleased } = require('../services/slackService');
 
 // Obtener todos los ambientes
@@ -54,6 +55,17 @@ router.post('/environments/:name/deploy', async (req, res) => {
 
     await environment.save();
 
+    // Guardar en el histórico
+    console.log('💾 Guardando en histórico - Deploy:', { environmentName: environment.name, branch, performedBy: deployedBy });
+    const historyEntry = await EnvironmentHistory.create({
+      environmentName: environment.name,
+      action: 'deploy',
+      branch: branch,
+      performedBy: deployedBy,
+      performedAt: new Date()
+    });
+    console.log('✅ Histórico guardado:', historyEntry._id);
+
     // Enviar notificación a Slack
     await notifyEnvironmentOccupied(environment.name, branch, deployedBy);
 
@@ -70,6 +82,12 @@ router.post('/environments/:name/deploy', async (req, res) => {
 // Liberar ambiente
 router.post('/environments/:name/release', async (req, res) => {
   try {
+    const { releasedBy } = req.body;
+
+    if (!releasedBy) {
+      return res.status(400).json({ message: 'Se requiere releasedBy (nombre de quien libera)' });
+    }
+
     const environment = await Environment.findOne({ name: req.params.name });
     
     if (!environment) {
@@ -80,12 +98,30 @@ router.post('/environments/:name/release', async (req, res) => {
       return res.status(400).json({ message: 'El ambiente ya está libre' });
     }
 
+    // Guardar información antes de limpiar para el histórico
+    const previousBranch = environment.branch;
+    const previousDeployedBy = environment.deployedBy;
+
     environment.status = 'Libre';
     environment.branch = null;
     environment.deployedBy = null;
     environment.deployedAt = null;
 
     await environment.save();
+
+    // Guardar en el histórico
+    console.log('💾 Guardando en histórico - Release:', { environmentName: environment.name, branch: previousBranch, performedBy: releasedBy });
+    const historyEntry = await EnvironmentHistory.create({
+      environmentName: environment.name,
+      action: 'release',
+      branch: previousBranch,
+      performedBy: releasedBy,
+      performedAt: new Date(),
+      metadata: {
+        previousDeployedBy: previousDeployedBy
+      }
+    });
+    console.log('✅ Histórico guardado:', historyEntry._id);
 
     // Enviar notificación a Slack
     await notifyEnvironmentReleased(environment.name);
@@ -120,6 +156,38 @@ router.post('/environments/init', async (req, res) => {
     res.json({ message: 'Ambientes inicializados', results });
   } catch (error) {
     res.status(500).json({ message: 'Error al inicializar ambientes', error: error.message });
+  }
+});
+
+// Obtener histórico de un ambiente
+router.get('/environments/:name/history', async (req, res) => {
+  try {
+    const { limit = 50 } = req.query;
+    
+    const history = await EnvironmentHistory.find({ 
+      environmentName: req.params.name 
+    })
+      .sort({ performedAt: -1 })
+      .limit(parseInt(limit));
+
+    res.json(history);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener histórico', error: error.message });
+  }
+});
+
+// Obtener todo el histórico (ambos ambientes)
+router.get('/history', async (req, res) => {
+  try {
+    const { limit = 100 } = req.query;
+    
+    const history = await EnvironmentHistory.find()
+      .sort({ performedAt: -1 })
+      .limit(parseInt(limit));
+
+    res.json(history);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener histórico', error: error.message });
   }
 });
 

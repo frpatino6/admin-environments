@@ -137,10 +137,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   releaseEnvironment(env: Environment): void {
+    const releasedBy = prompt(`¿Quién está liberando el ambiente ${env.name}? (Ingresa tu nombre)`);
+    
+    if (!releasedBy) {
+      return; // Usuario canceló
+    }
+
     if (confirm(`¿Estás seguro de liberar el ambiente ${env.name}?`)) {
-      this.environmentService.release(env.name).subscribe({
+      this.environmentService.release(env.name, releasedBy).subscribe({
         next: () => {
-          this.showMessage(`🎉 Ambiente ${env.name} liberado exitosamente`);
+          this.showMessage(`🎉 Ambiente ${env.name} liberado por ${releasedBy}`);
           this.loadEnvironments();
         },
         error: (error) => {
