@@ -89,11 +89,11 @@
           <span>Cargando...</span>
         </div>
 
-        <div *ngIf="!loadingHistory[env.name] && environmentHistory[env.name]?.length === 0" class="history-empty">
+        <div *ngIf="!loadingHistory[env.name] && (!environmentHistory[env.name] || environmentHistory[env.name].length === 0)" class="history-empty">
           <span>Sin historial aún</span>
         </div>
 
-        <div *ngIf="!loadingHistory[env.name] && environmentHistory[env.name]?.length > 0" class="history-list">
+        <div *ngIf="!loadingHistory[env.name] && environmentHistory[env.name] && environmentHistory[env.name].length > 0" class="history-list">
           <div *ngFor="let record of environmentHistory[env.name]" class="history-item">
             <mat-icon [color]="getHistoryColor(record.action)" class="history-icon">
               {{ getHistoryIcon(record.action) }}
