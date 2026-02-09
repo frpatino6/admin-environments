@@ -124,7 +124,7 @@ router.post('/environments/:name/release', async (req, res) => {
     console.log('✅ Histórico guardado:', historyEntry._id);
 
     // Enviar notificación a Slack
-    await notifyEnvironmentReleased(environment.name);
+    await notifyEnvironmentReleased(environment.name, releasedBy);
 
     // Emitir evento WebSocket
     const io = req.app.get('io');

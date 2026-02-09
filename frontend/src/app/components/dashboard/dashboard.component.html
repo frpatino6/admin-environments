@@ -76,6 +76,43 @@
           Liberar Ambiente
         </button>
       </mat-card-actions>
+
+      <!-- Histórico del ambiente -->
+      <mat-card-content class="history-section">
+        <div class="history-header">
+          <mat-icon>history</mat-icon>
+          <span>Últimas actividades</span>
+        </div>
+
+        <div *ngIf="loadingHistory[env.name]" class="history-loading">
+          <mat-spinner diameter="20"></mat-spinner>
+          <span>Cargando...</span>
+        </div>
+
+        <div *ngIf="!loadingHistory[env.name] && environmentHistory[env.name]?.length === 0" class="history-empty">
+          <span>Sin historial aún</span>
+        </div>
+
+        <div *ngIf="!loadingHistory[env.name] && environmentHistory[env.name]?.length > 0" class="history-list">
+          <div *ngFor="let record of environmentHistory[env.name]" class="history-item">
+            <mat-icon [color]="getHistoryColor(record.action)" class="history-icon">
+              {{ getHistoryIcon(record.action) }}
+            </mat-icon>
+            <div class="history-details">
+              <div class="history-action">
+                <strong *ngIf="record.action === 'deploy'">Desplegada</strong>
+                <strong *ngIf="record.action === 'release'">Liberada</strong>
+                <span class="history-branch" *ngIf="record.branch">{{ record.branch }}</span>
+              </div>
+              <div class="history-meta">
+                <span>{{ record.performedBy }}</span>
+                <span class="history-separator">•</span>
+                <span class="history-date">{{ formatHistoryDate(record.performedAt) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
     </mat-card>
   </div>
 

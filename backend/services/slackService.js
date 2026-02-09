@@ -25,8 +25,8 @@ const notifyEnvironmentOccupied = async (envName, branch, user) => {
   await sendSlackNotification(message);
 };
 
-const notifyEnvironmentReleased = async (envName) => {
-  const message = `✅ Ambiente *${envName}* ha sido liberado y está disponible para despliegue.`;
+const notifyEnvironmentReleased = async (envName, releasedBy) => {
+  const message = `✅ Ambiente *${envName}* ha sido liberado por *${releasedBy}* y está disponible para despliegue.`;
   await sendSlackNotification(message);
 };
 

@@ -113,16 +113,38 @@ curl -X POST http://localhost:3000/api/environments/init
 
 O desde el navegador visita: `http://localhost:3000/api/environments/init`
 
-## ▶️ Ejecución
+## ▶️ Ejecución Local
 
-### Desarrollo
+### Comandos Rápidos (Windows con NVM)
 
-> **Nota:** Este proyecto requiere Node.js v20+. Si usas `nvm`, asegúrate de usar Node 20.
+Si tienes Node 12 globalmente pero necesitas usar Node 20 para este proyecto:
+
+**Terminal 1 - Backend:**
+```powershell
+cd D:\GitFlyr\admin-environments\backend
+C:\ProgramData\nvm\v20.20.0\npm.cmd start
+# O con node directamente:
+Set-Location D:\GitFlyr\admin-environments\backend
+C:\ProgramData\nvm\v20.20.0\node.exe .\server.js
+```
+
+**Terminal 2 - Frontend:**
+```powershell
+cd D:\GitFlyr\admin-environments\frontend
+$env:Path = "C:\ProgramData\nvm\v20.20.0;$env:Path"
+npm start
+```
+
+**URLs:**
+- Backend API: `http://localhost:3000/api`
+- Frontend: `http://localhost:4200`
+
+### Desarrollo (Linux/Mac o Node 20 global)
 
 **Terminal 1 - Backend:**
 ```bash
 cd backend
-npm run dev
+npm start
 ```
 El servidor estará en `http://localhost:3000`
 
@@ -133,21 +155,22 @@ npm start
 ```
 La aplicación estará en `http://localhost:4200`
 
-### Usando Node 20 con nvm en Windows
+### Solución de Problemas Comunes
 
-Si tienes múltiples versiones de Node instaladas con `nvm` y necesitas usar Node 20 sin cambiar la versión global:
+**Error: "The Angular CLI requires a minimum Node.js version of v18.13"**
+- Asegúrate de usar Node 20+
+- En Windows con nvm: `$env:Path = "C:\ProgramData\nvm\v20.20.0;$env:Path"`
+- Verifica versión: `node --version` (debe mostrar v20.x.x)
 
-**Terminal 1 - Backend:**
-```powershell
-cd D:\GitFlyr\admin-environments\backend
-C:\ProgramData\nvm\v20.20.0\npm.cmd run dev
-```
+**El frontend apunta a producción en lugar de localhost**
+- Verifica que estés en modo desarrollo: `npm start` (no `npm run build`)
+- El archivo `angular.json` debe tener `fileReplacements` en la sección `development`
+- Refresca el navegador con Ctrl+F5
 
-**Terminal 2 - Frontend (en una nueva ventana de PowerShell):**
-```powershell
-cd D:\GitFlyr\admin-environments\frontend
-C:\ProgramData\nvm\v20.20.0\npm.cmd start
-```
+**Backend no conecta a MongoDB**
+- Verifica tu conexión a internet
+- Revisa que tu IP esté en la lista blanca de MongoDB Atlas
+- Ve a: https://cloud.mongodb.com → Network Access → Add IP Address
 
 > Ajusta la ruta de nvm según tu instalación. Usa `nvm list` para ver las versiones instaladas.
 

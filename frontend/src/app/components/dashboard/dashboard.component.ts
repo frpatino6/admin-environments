@@ -31,7 +31,9 @@ import { Subscription } from 'rxjs';
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   environments: Environment[] = [];
+  environmentHistory: { [key: string]: any[] } = {}; // Histórico por ambiente
   loading = true;
+  loadingHistory: { [key: string]: boolean } = {}; // Estado de carga por ambiente
   private wsSubscription?: Subscription;
 
   constructor(
@@ -44,6 +46,38 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadEnvironments();
     this.setupWebSocket();
+  }
+
+  loadHistory(envName: string): void {
+    this.loadingHistory[envName] = true;
+    this.environmentService.getHistory(envName, 5).subscribe({
+      next: (history) => {
+        this.environmentHistory[envName] = history;
+        this.loadingHistory[envName] = false;
+      },
+      error: (error) => {
+        console.error('Error loading history:', error);
+        this.loadingHistory[envName] = false;
+      }
+    });
+  }
+
+  formatHistoryDate(date: string): string {
+    const d = new Date(date);
+    return d.toLocaleDateString('es-ES', { 
+      day: '2-digit', 
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  getHistoryIcon(action: string): string {
+    return action === 'deploy' ? 'publish' : 'check_circle';
+  }
+
+  getHistoryColor(action: string): string {
+    return action === 'deploy' ? 'primary' : 'accent';
   }
 
   ngOnDestroy(): void {
@@ -63,9 +97,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
         if (index !== -1) {
           this.environments[index] = updatedEnv;
           this.showMessage(`🔄 Ambiente ${updatedEnv.name} actualizado`);
+          // Recargar histórico del ambiente actualizado
+          this.loadHistory(updatedEnv.name);
         } else {
           // Si no existe, agregarlo
           this.environments.push(updatedEnv);
+          this.loadHistory(updatedEnv.name);
         }
         
         // Ordenar por nombre
@@ -83,6 +120,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
       next: (data) => {
         this.environments = data;
         this.loading = false;
+        
+        // Cargar histórico para cada ambiente
+        data.forEach(env => {
+          this.loadHistory(env.name);
+        });
         
         // Si no hay ambientes, inicializarlos
         if (data.length === 0) {
