@@ -19,10 +19,10 @@ Ve a https://render.com y crea una cuenta (puedes usar GitHub)
 - **Name**: `admin-environments-backend`
 - **Region**: `Oregon (US West)` o el más cercano
 - **Branch**: `main` o `master`
-- **Root Directory**: `backend`
+- **Root Directory**: `backend` (NO `backend/src`)
 - **Runtime**: `Node`
 - **Build Command**: `npm install`
-- **Start Command**: `node server.js`
+- **Start Command**: `npm start`
 
 **Pricing:**
 - Selecciona **Free** tier (si está disponible) o **Starter** ($7/mes)
@@ -33,6 +33,7 @@ En la sección **"Environment"**, agrega:
 
 ```
 MONGODB_URI=mongodb+srv://frpatino6Coffe:s4ntiago@mycoffecluster.yerjpro.mongodb.net/environment-algo
+DNS_SERVERS=8.8.8.8,1.1.1.1
 PORT=3000
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
 NODE_ENV=production
@@ -163,6 +164,7 @@ Si conectaste un repositorio Git:
 
 ### Base de datos no conecta
 - Verifica `MONGODB_URI` en variables de entorno
+- Agrega `DNS_SERVERS=8.8.8.8,1.1.1.1` en Render
 - Asegúrate que MongoDB Atlas permite conexiones desde `0.0.0.0/0`
 
 ### CORS Errors
