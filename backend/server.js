@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const environmentRoutes = require('./routes/environments');
+const teamRoutes = require('./routes/teams');
 require('dotenv').config();
 
 const app = express();
@@ -37,6 +38,7 @@ io.on('connection', (socket) => {
 });
 
 // Rutas
+app.use('/api', teamRoutes);
 app.use('/api', environmentRoutes);
 
 // Ruta de health check

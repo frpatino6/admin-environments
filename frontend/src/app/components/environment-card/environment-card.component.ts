@@ -35,17 +35,16 @@ export class EnvironmentCardComponent {
   isFree = computed(() => this.env().status === 'Libre');
 
   constructor() {
-    // Runs once on init (effect always fires at least once) and again on any
-    // env input change (e.g. websocket update from dashboard).
     effect(() => {
-      const name = this.env().name; // reactive tracking
-      untracked(() => this.loadHistory(name));
+      const name = this.env().name;
+      const team = this.env().team;
+      untracked(() => this.loadHistory(team, name));
     }, { allowSignalWrites: true });
   }
 
-  private loadHistory(envName: string): void {
+  private loadHistory(team: string, envName: string): void {
     this.loadingHistory.set(true);
-    this.envService.getHistory(envName, 5).subscribe({
+    this.envService.getHistory(team, envName, 5).subscribe({
       next: (h) => {
         this.history.set(h as ActivityLog[]);
         this.loadingHistory.set(false);

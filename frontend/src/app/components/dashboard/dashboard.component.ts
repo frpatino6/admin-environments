@@ -6,6 +6,8 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Subscription } from 'rxjs';
@@ -21,6 +23,7 @@ import { ReleaseDialogComponent } from '../release-dialog/release-dialog.compone
   standalone: true,
   imports: [
     CommonModule,
+    RouterLink,
     MatDialogModule,
     MatSnackBarModule,
     EnvironmentCardComponent,
@@ -29,17 +32,20 @@ import { ReleaseDialogComponent } from '../release-dialog/release-dialog.compone
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit, OnDestroy {
+  private route = inject(ActivatedRoute);
   private envService = inject(EnvironmentService);
   private wsService = inject(WebsocketService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
 
+  teamSlug = signal('');
   environments = signal<Environment[]>([]);
   loading = signal(true);
 
   private wsSub?: Subscription;
 
   ngOnInit(): void {
+    this.teamSlug.set(this.route.snapshot.paramMap.get('slug') ?? '');
     this.refresh();
     this.setupWs();
   }
@@ -50,11 +56,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   refresh(): void {
     this.loading.set(true);
-    this.envService.getEnvironments().subscribe({
+    this.envService.getEnvironments(this.teamSlug()).subscribe({
       next: (data) => {
         this.environments.set([...data].sort((a, b) => a.name.localeCompare(b.name)));
         this.loading.set(false);
-        if (data.length === 0) this.initEnvs();
       },
       error: () => {
         this.loading.set(false);
@@ -63,16 +68,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  private initEnvs(): void {
-    this.envService.initializeEnvironments().subscribe({
-      next: () => this.refresh(),
-      error: () => this.notify('Error al inicializar ambientes'),
-    });
-  }
-
   private setupWs(): void {
     this.wsSub = this.wsService.onEnvironmentUpdate().subscribe({
       next: (updated) => {
+        if (updated.team !== this.teamSlug()) return;
         this.environments.update((envs) => {
           const idx = envs.findIndex((e) => e._id === updated._id);
           const next = [...envs];
@@ -93,7 +92,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
     ref.afterClosed().subscribe((result) => {
       if (result) {
-        this.envService.deploy(env.name, result).subscribe({
+        this.envService.deploy(this.teamSlug(), env.name, result).subscribe({
           next: () => { this.notify(`${env.name} ocupado exitosamente`); this.refresh(); },
           error: (e) => this.notify(e.error?.message ?? 'Error al desplegar'),
         });
@@ -109,7 +108,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
     ref.afterClosed().subscribe((releasedBy: string | undefined) => {
       if (releasedBy) {
-        this.envService.release(env.name, releasedBy).subscribe({
+        this.envService.release(this.teamSlug(), env.name, releasedBy).subscribe({
           next: () => { this.notify(`${env.name} liberado por ${releasedBy}`); this.refresh(); },
           error: (e) => this.notify(e.error?.message ?? 'Error al liberar ambiente'),
         });

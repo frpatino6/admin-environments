@@ -4,40 +4,32 @@ import { Observable } from 'rxjs';
 import { Environment, DeployRequest } from '../models/environment.model';
 import { environment } from '../../environments/environment';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class EnvironmentService {
-  private apiUrl = `${environment.apiUrl}/environments`;
+  private baseUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) {
-    console.log('🔗 API URL:', this.apiUrl);
+  constructor(private http: HttpClient) {}
+
+  private teamEnvsUrl(team: string): string {
+    return `${this.baseUrl}/teams/${team}/environments`;
   }
 
-  getEnvironments(): Observable<Environment[]> {
-    return this.http.get<Environment[]>(this.apiUrl);
+  getEnvironments(team: string): Observable<Environment[]> {
+    return this.http.get<Environment[]>(this.teamEnvsUrl(team));
   }
 
-  getEnvironment(name: string): Observable<Environment> {
-    return this.http.get<Environment>(`${this.apiUrl}/${name}`);
+  deploy(team: string, name: string, data: DeployRequest): Observable<Environment> {
+    return this.http.post<Environment>(`${this.teamEnvsUrl(team)}/${name}/deploy`, data);
   }
 
-  deploy(name: string, data: DeployRequest): Observable<Environment> {
-    return this.http.post<Environment>(`${this.apiUrl}/${name}/deploy`, data);
+  release(team: string, name: string, releasedBy: string): Observable<Environment> {
+    return this.http.post<Environment>(`${this.teamEnvsUrl(team)}/${name}/release`, { releasedBy });
   }
 
-  release(name: string, releasedBy: string): Observable<Environment> {
-    return this.http.post<Environment>(`${this.apiUrl}/${name}/release`, { releasedBy });
-  }
-
-  initializeEnvironments(): Observable<any> {
-    return this.http.post('/api/environments/init', {});
-  }
-
-  getHistory(name?: string, limit: number = 50): Observable<any[]> {
-    const url = name 
-      ? `${this.apiUrl}/${name}/history?limit=${limit}`
-      : `${environment.apiUrl}/history?limit=${limit}`;
-    return this.http.get<any[]>(url);
+  getHistory(team: string, name?: string, limit = 50): Observable<any[]> {
+    if (name) {
+      return this.http.get<any[]>(`${this.teamEnvsUrl(team)}/${name}/history?limit=${limit}`);
+    }
+    return this.http.get<any[]>(`${this.baseUrl}/teams/${team}/history?limit=${limit}`);
   }
 }
