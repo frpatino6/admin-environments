@@ -13,3 +13,17 @@ export interface DeployRequest {
   branch: string;
   deployedBy: string;
 }
+
+export type ActivityAction = 'deploy' | 'release';
+
+export interface ActivityLog {
+  _id?: string;
+  environmentName: string;
+  action: ActivityAction;
+  branch: string | null;
+  performedBy: string;
+  releasedBy?: string;
+  performedAt?: string;
+  timestamp?: string;
+  metadata?: Record<string, unknown>;
+}

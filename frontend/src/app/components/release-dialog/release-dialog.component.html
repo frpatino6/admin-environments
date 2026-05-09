@@ -1,0 +1,53 @@
+<div class="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0f0f2a]/95 p-6 shadow-glass-lg backdrop-blur-[16px]">
+  <!-- Top glow line -->
+  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent"></div>
+
+  <!-- Header -->
+  <div class="mb-5 flex items-center gap-3">
+    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/15 ring-1 ring-red-500/25">
+      <svg class="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 1 1 9 0v3.75M3.75 21.75h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H3.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+      </svg>
+    </div>
+    <div>
+      <h2 class="text-base font-bold text-white">Liberar {{ data.environmentName }}</h2>
+      <p class="text-xs text-slate-500">¿Quién está liberando este ambiente?</p>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div>
+    <label class="mb-1.5 block text-xs font-medium text-slate-400">Tu nombre</label>
+    <div class="relative">
+      <div class="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+        <svg class="h-4 w-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+        </svg>
+      </div>
+      <input
+        [ngModel]="releasedBy()"
+        (ngModelChange)="releasedBy.set($event)"
+        (keyup.enter)="isValid() && onConfirm()"
+        placeholder="Juan Pérez"
+        class="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-4 text-sm text-white placeholder-slate-700 outline-none transition-all duration-200 focus:border-red-500/40 focus:bg-white/[0.07] focus:ring-1 focus:ring-red-500/25" />
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="mt-5 flex gap-3">
+    <button
+      (click)="onCancel()"
+      class="flex flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-slate-400 transition-all duration-200 hover:bg-white/10 hover:text-slate-200">
+      Cancelar
+    </button>
+    <button
+      (click)="onConfirm()"
+      [disabled]="!isValid()"
+      class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-500 to-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-200 hover:scale-[1.02] hover:shadow-red-500/25 disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.98]">
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+      </svg>
+      Liberar
+    </button>
+  </div>
+</div>
