@@ -1,218 +1,127 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  signal,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { Subscription } from 'rxjs';
+import { Environment } from '../../models/environment.model';
 import { EnvironmentService } from '../../services/environment.service';
 import { WebsocketService } from '../../services/websocket.service';
-import { Environment } from '../../models/environment.model';
+import { EnvironmentCardComponent } from '../environment-card/environment-card.component';
 import { DeployDialogComponent } from '../deploy-dialog/deploy-dialog.component';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { Subscription } from 'rxjs';
+import { ReleaseDialogComponent } from '../release-dialog/release-dialog.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [
     CommonModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatChipsModule,
-    MatProgressSpinnerModule,
+    MatDialogModule,
     MatSnackBarModule,
-    MatDialogModule
+    EnvironmentCardComponent,
   ],
   templateUrl: './dashboard.component.html',
-  styleUrl: './dashboard.component.scss'
+  styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit, OnDestroy {
-  environments: Environment[] = [];
-  environmentHistory: { [key: string]: any[] } = {}; // Histórico por ambiente
-  loading = true;
-  loadingHistory: { [key: string]: boolean } = {}; // Estado de carga por ambiente
-  private wsSubscription?: Subscription;
+  private envService = inject(EnvironmentService);
+  private wsService = inject(WebsocketService);
+  private dialog = inject(MatDialog);
+  private snackBar = inject(MatSnackBar);
 
-  constructor(
-    private environmentService: EnvironmentService,
-    private websocketService: WebsocketService,
-    private dialog: MatDialog,
-    private snackBar: MatSnackBar
-  ) {}
+  environments = signal<Environment[]>([]);
+  loading = signal(true);
+
+  private wsSub?: Subscription;
 
   ngOnInit(): void {
-    this.loadEnvironments();
-    this.setupWebSocket();
-  }
-
-  loadHistory(envName: string): void {
-    this.loadingHistory[envName] = true;
-    this.environmentService.getHistory(envName, 5).subscribe({
-      next: (history) => {
-        this.environmentHistory[envName] = history;
-        this.loadingHistory[envName] = false;
-      },
-      error: (error) => {
-        console.error('Error loading history:', error);
-        this.loadingHistory[envName] = false;
-      }
-    });
-  }
-
-  formatHistoryDate(date: string): string {
-    const d = new Date(date);
-    return d.toLocaleDateString('es-ES', { 
-      day: '2-digit', 
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
-
-  getHistoryIcon(action: string): string {
-    return action === 'deploy' ? 'publish' : 'check_circle';
-  }
-
-  getHistoryColor(action: string): string {
-    return action === 'deploy' ? 'primary' : 'accent';
+    this.refresh();
+    this.setupWs();
   }
 
   ngOnDestroy(): void {
-    if (this.wsSubscription) {
-      this.wsSubscription.unsubscribe();
-    }
+    this.wsSub?.unsubscribe();
   }
 
-  setupWebSocket(): void {
-    // Escuchar actualizaciones en tiempo real
-    this.wsSubscription = this.websocketService.onEnvironmentUpdate().subscribe({
-      next: (updatedEnv) => {
-        console.log('📡 Actualización recibida:', updatedEnv);
-        
-        // Actualizar el ambiente en la lista
-        const index = this.environments.findIndex(e => e._id === updatedEnv._id);
-        if (index !== -1) {
-          this.environments[index] = updatedEnv;
-          this.showMessage(`🔄 Ambiente ${updatedEnv.name} actualizado`);
-          // Recargar histórico del ambiente actualizado
-          this.loadHistory(updatedEnv.name);
-        } else {
-          // Si no existe, agregarlo
-          this.environments.push(updatedEnv);
-          this.loadHistory(updatedEnv.name);
-        }
-        
-        // Ordenar por nombre
-        this.environments.sort((a, b) => a.name.localeCompare(b.name));
-      },
-      error: (error) => {
-        console.error('Error en WebSocket:', error);
-      }
-    });
-  }
-
-  loadEnvironments(): void {
-    this.loading = true;
-    this.environmentService.getEnvironments().subscribe({
+  refresh(): void {
+    this.loading.set(true);
+    this.envService.getEnvironments().subscribe({
       next: (data) => {
-        this.environments = data;
-        this.loading = false;
-        
-        // Cargar histórico para cada ambiente
-        data.forEach(env => {
-          this.loadHistory(env.name);
+        this.environments.set([...data].sort((a, b) => a.name.localeCompare(b.name)));
+        this.loading.set(false);
+        if (data.length === 0) this.initEnvs();
+      },
+      error: () => {
+        this.loading.set(false);
+        this.notify('Error al cargar ambientes');
+      },
+    });
+  }
+
+  private initEnvs(): void {
+    this.envService.initializeEnvironments().subscribe({
+      next: () => this.refresh(),
+      error: () => this.notify('Error al inicializar ambientes'),
+    });
+  }
+
+  private setupWs(): void {
+    this.wsSub = this.wsService.onEnvironmentUpdate().subscribe({
+      next: (updated) => {
+        this.environments.update((envs) => {
+          const idx = envs.findIndex((e) => e._id === updated._id);
+          const next = [...envs];
+          if (idx !== -1) next[idx] = updated;
+          else next.push(updated);
+          return next.sort((a, b) => a.name.localeCompare(b.name));
         });
-        
-        // Si no hay ambientes, inicializarlos
-        if (data.length === 0) {
-          this.initializeEnvironments();
-        }
+        this.notify(`Ambiente ${updated.name} actualizado`);
       },
-      error: (error) => {
-        console.error('Error loading environments:', error);
-        this.loading = false;
-        this.showMessage('Error al cargar ambientes');
-      }
     });
   }
 
-  initializeEnvironments(): void {
-    this.environmentService.initializeEnvironments().subscribe({
-      next: () => {
-        this.showMessage('Ambientes inicializados correctamente');
-        this.loadEnvironments();
-      },
-      error: (error) => {
-        console.error('Error initializing environments:', error);
-        this.showMessage('Error al inicializar ambientes');
-      }
+  onDeploy(env: Environment): void {
+    const ref = this.dialog.open(DeployDialogComponent, {
+      width: '480px',
+      panelClass: 'glass-dialog',
+      data: { environmentName: env.name },
     });
-  }
-
-  openDeployDialog(env: Environment): void {
-    const dialogRef = this.dialog.open(DeployDialogComponent, {
-      width: '500px',
-      data: { environmentName: env.name }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
+    ref.afterClosed().subscribe((result) => {
       if (result) {
-        this.deployBranch(env.name, result);
+        this.envService.deploy(env.name, result).subscribe({
+          next: () => { this.notify(`${env.name} ocupado exitosamente`); this.refresh(); },
+          error: (e) => this.notify(e.error?.message ?? 'Error al desplegar'),
+        });
       }
     });
   }
 
-  deployBranch(envName: string, data: { branch: string, deployedBy: string }): void {
-    this.environmentService.deploy(envName, data).subscribe({
-      next: () => {
-        this.showMessage(`✅ Ambiente ${envName} ocupado exitosamente`);
-        this.loadEnvironments();
-      },
-      error: (error) => {
-        console.error('Error deploying:', error);
-        this.showMessage(error.error?.message || 'Error al desplegar');
+  onRelease(env: Environment): void {
+    const ref = this.dialog.open(ReleaseDialogComponent, {
+      width: '400px',
+      panelClass: 'glass-dialog',
+      data: { environmentName: env.name },
+    });
+    ref.afterClosed().subscribe((releasedBy: string | undefined) => {
+      if (releasedBy) {
+        this.envService.release(env.name, releasedBy).subscribe({
+          next: () => { this.notify(`${env.name} liberado por ${releasedBy}`); this.refresh(); },
+          error: (e) => this.notify(e.error?.message ?? 'Error al liberar ambiente'),
+        });
       }
     });
   }
 
-  releaseEnvironment(env: Environment): void {
-    const releasedBy = prompt(`¿Quién está liberando el ambiente ${env.name}? (Ingresa tu nombre)`);
-    
-    if (!releasedBy) {
-      return; // Usuario canceló
-    }
-
-    if (confirm(`¿Estás seguro de liberar el ambiente ${env.name}?`)) {
-      this.environmentService.release(env.name, releasedBy).subscribe({
-        next: () => {
-          this.showMessage(`🎉 Ambiente ${env.name} liberado por ${releasedBy}`);
-          this.loadEnvironments();
-        },
-        error: (error) => {
-          console.error('Error releasing:', error);
-          this.showMessage(error.error?.message || 'Error al liberar ambiente');
-        }
-      });
-    }
-  }
-
-  showMessage(message: string): void {
-    this.snackBar.open(message, 'Cerrar', {
+  private notify(msg: string): void {
+    this.snackBar.open(msg, 'OK', {
       duration: 4000,
       horizontalPosition: 'end',
-      verticalPosition: 'top'
+      verticalPosition: 'top',
     });
-  }
-
-  getStatusColor(status: string): string {
-    return status === 'Libre' ? 'primary' : 'accent';
-  }
-
-  formatDate(date: Date | null): string {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleString('es-ES');
   }
 }
