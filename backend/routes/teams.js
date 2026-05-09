@@ -18,11 +18,32 @@ router.get('/teams', async (req, res) => {
 // Seed default teams + environments — must be before /teams/:team routes
 router.post('/teams/init', async (req, res) => {
   try {
+    // Migrate legacy environments: stamp team field based on name mapping
+    const nameToTeam = { dev4: 'xqo', test4: 'xqo', dev1: 'xqa', test1: 'xqa', dev2: 'xqb', test2: 'xqb' };
+    for (const [envName, teamSlug] of Object.entries(nameToTeam)) {
+      await Environment.updateMany(
+        { name: envName, team: { $exists: false } },
+        { $set: { team: teamSlug } }
+      );
+    }
+    // Remove any remaining teamless envs that aren't in the mapping
+    await Environment.deleteMany({ team: { $exists: false } });
+
     const defaultTeams = [
       { slug: 'xqo', displayName: 'XQO', environments: ['dev4', 'test4'] },
       { slug: 'xqa', displayName: 'XQA', environments: ['dev1', 'test1'] },
       { slug: 'xqb', displayName: 'XQB', environments: ['dev2', 'test2'] },
     ];
+
+    // Migrate legacy history records that lack team field
+    for (const teamData of defaultTeams) {
+      for (const envName of teamData.environments) {
+        await EnvironmentHistory.updateMany(
+          { environmentName: envName, team: { $exists: false } },
+          { $set: { team: teamData.slug } }
+        );
+      }
+    }
 
     const results = [];
 
@@ -37,10 +58,11 @@ router.post('/teams/init', async (req, res) => {
       }
 
       for (const envName of teamData.environments) {
-        const exists = await Environment.findOne({ name: envName, team: teamData.slug });
-        if (!exists) {
-          await Environment.create({ name: envName, team: teamData.slug });
-        }
+        await Environment.findOneAndUpdate(
+          { name: envName, team: teamData.slug },
+          { $setOnInsert: { name: envName, team: teamData.slug, status: 'Libre', branch: null, deployedBy: null, deployedAt: null } },
+          { upsert: true }
+        );
       }
     }
 
@@ -181,8 +203,8 @@ router.get('/teams/:team/environments/:name/history', async (req, res) => {
   try {
     const { limit = 50 } = req.query;
     const history = await EnvironmentHistory.find({
-      team: req.params.team,
-      environmentName: req.params.name
+      environmentName: req.params.name,
+      $or: [{ team: req.params.team }, { team: { $exists: false } }]
     })
       .sort({ performedAt: -1 })
       .limit(parseInt(limit));
@@ -196,7 +218,15 @@ router.get('/teams/:team/environments/:name/history', async (req, res) => {
 router.get('/teams/:team/history', async (req, res) => {
   try {
     const { limit = 100 } = req.query;
-    const history = await EnvironmentHistory.find({ team: req.params.team })
+    // Load team to know which env names belong to it
+    const team = await Team.findOne({ slug: req.params.team });
+    const envNames = team?.environments ?? [];
+    const history = await EnvironmentHistory.find({
+      $or: [
+        { team: req.params.team },
+        { team: { $exists: false }, environmentName: { $in: envNames } }
+      ]
+    })
       .sort({ performedAt: -1 })
       .limit(parseInt(limit));
     res.json(history);

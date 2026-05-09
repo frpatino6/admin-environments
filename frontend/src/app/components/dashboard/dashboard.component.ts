@@ -14,6 +14,7 @@ import { Subscription } from 'rxjs';
 import { Environment } from '../../models/environment.model';
 import { EnvironmentService } from '../../services/environment.service';
 import { WebsocketService } from '../../services/websocket.service';
+import { TeamService } from '../../services/team.service';
 import { EnvironmentCardComponent } from '../environment-card/environment-card.component';
 import { DeployDialogComponent } from '../deploy-dialog/deploy-dialog.component';
 import { ReleaseDialogComponent } from '../release-dialog/release-dialog.component';
@@ -35,6 +36,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private envService = inject(EnvironmentService);
   private wsService = inject(WebsocketService);
+  private teamService = inject(TeamService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
 
@@ -58,6 +60,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.loading.set(true);
     this.envService.getEnvironments(this.teamSlug()).subscribe({
       next: (data) => {
+        if (data.length === 0) { this.initTeams(); return; }
         this.environments.set([...data].sort((a, b) => a.name.localeCompare(b.name)));
         this.loading.set(false);
       },
@@ -65,6 +68,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.loading.set(false);
         this.notify('Error al cargar ambientes');
       },
+    });
+  }
+
+  private initTeams(): void {
+    this.teamService.initTeams().subscribe({
+      next: () => this.refresh(),
+      error: () => { this.loading.set(false); this.notify('Error al inicializar ambientes'); },
     });
   }
 
