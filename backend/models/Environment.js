@@ -3,9 +3,11 @@ const mongoose = require('mongoose');
 const environmentSchema = new mongoose.Schema({
   name: { type: String, required: true },
   team: { type: String, required: true },
+  shared: { type: Boolean, default: false },
   status: { type: String, enum: ['Libre', 'Ocupado'], default: 'Libre' },
   branch: { type: String, default: null },
   deployedBy: { type: String, default: null },
+  deployedByTeam: { type: String, default: null },
   deployedAt: { type: Date, default: null }
 }, { timestamps: true });
 

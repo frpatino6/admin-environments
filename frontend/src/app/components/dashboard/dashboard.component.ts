@@ -6,8 +6,7 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Subscription } from 'rxjs';
@@ -24,7 +23,6 @@ import { ReleaseDialogComponent } from '../release-dialog/release-dialog.compone
   standalone: true,
   imports: [
     CommonModule,
-    RouterLink,
     MatDialogModule,
     MatSnackBarModule,
     EnvironmentCardComponent,
@@ -34,6 +32,7 @@ import { ReleaseDialogComponent } from '../release-dialog/release-dialog.compone
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private envService = inject(EnvironmentService);
   private wsService = inject(WebsocketService);
   private teamService = inject(TeamService);
@@ -69,6 +68,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.notify('Error al cargar ambientes');
       },
     });
+  }
+
+  goToTeams(): void {
+    this.teamService.clearSavedTeam();
+    this.router.navigate(['/teams']);
   }
 
   private initTeams(): void {

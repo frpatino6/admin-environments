@@ -11,7 +11,14 @@
   <div class="flex items-start justify-between gap-3">
     <div>
       <h2 class="text-2xl font-bold tracking-widest text-white uppercase">{{ env().name }}</h2>
-      <p class="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600">Ambiente</p>
+      <div class="mt-0.5 flex items-center gap-2">
+        <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600">Ambiente</p>
+        @if (isShared()) {
+          <span class="rounded-full bg-sky-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-sky-400 ring-1 ring-sky-500/20">
+            Compartido
+          </span>
+        }
+      </div>
     </div>
 
     <!-- Status badge -->
@@ -56,6 +63,11 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
           </svg>
           <span class="text-sm text-slate-300">{{ env().deployedBy }}</span>
+          @if (isShared() && env().deployedByTeam) {
+            <span class="rounded-full bg-sky-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-sky-400 ring-1 ring-sky-500/20">
+              {{ env().deployedByTeam }}
+            </span>
+          }
         </div>
       }
 
