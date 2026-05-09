@@ -33,6 +33,7 @@ export class EnvironmentCardComponent {
 
   isOccupied = computed(() => this.env().status === 'Ocupado');
   isFree = computed(() => this.env().status === 'Libre');
+  isShared = computed(() => !!this.env().shared);
 
   constructor() {
     effect(() => {

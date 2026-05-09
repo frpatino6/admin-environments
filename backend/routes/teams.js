@@ -66,6 +66,16 @@ router.post('/teams/init', async (req, res) => {
       }
     }
 
+    // Seed shared environments (visible to all teams)
+    const sharedEnvs = ['uat'];
+    for (const envName of sharedEnvs) {
+      await Environment.findOneAndUpdate(
+        { name: envName, team: 'shared' },
+        { $setOnInsert: { name: envName, team: 'shared', shared: true, status: 'Libre', branch: null, deployedBy: null, deployedByTeam: null, deployedAt: null } },
+        { upsert: true }
+      );
+    }
+
     res.json({ message: 'Equipos inicializados', results });
   } catch (error) {
     res.status(500).json({ message: 'Error al inicializar equipos', error: error.message });
@@ -92,10 +102,12 @@ router.post('/teams', async (req, res) => {
   }
 });
 
-// Get environments for a team
+// Get environments for a team (own + shared)
 router.get('/teams/:team/environments', async (req, res) => {
   try {
-    const environments = await Environment.find({ team: req.params.team }).sort({ name: 1 });
+    const environments = await Environment.find({
+      $or: [{ team: req.params.team }, { shared: true }]
+    }).sort({ shared: 1, name: 1 });
     res.json(environments);
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener ambientes', error: error.message });
@@ -112,7 +124,7 @@ router.post('/teams/:team/environments/:name/deploy', async (req, res) => {
       return res.status(400).json({ message: 'Se requiere branch y deployedBy' });
     }
 
-    const environment = await Environment.findOne({ name, team });
+    const environment = await Environment.findOne({ name, $or: [{ team }, { shared: true }] });
     if (!environment) {
       return res.status(404).json({ message: 'Ambiente no encontrado' });
     }
@@ -126,6 +138,7 @@ router.post('/teams/:team/environments/:name/deploy', async (req, res) => {
     environment.status = 'Ocupado';
     environment.branch = branch;
     environment.deployedBy = deployedBy;
+    environment.deployedByTeam = environment.shared ? team : null;
     environment.deployedAt = new Date();
     await environment.save();
 
@@ -159,7 +172,7 @@ router.post('/teams/:team/environments/:name/release', async (req, res) => {
       return res.status(400).json({ message: 'Se requiere releasedBy' });
     }
 
-    const environment = await Environment.findOne({ name, team });
+    const environment = await Environment.findOne({ name, $or: [{ team }, { shared: true }] });
     if (!environment) {
       return res.status(404).json({ message: 'Ambiente no encontrado' });
     }
@@ -174,6 +187,7 @@ router.post('/teams/:team/environments/:name/release', async (req, res) => {
     environment.status = 'Libre';
     environment.branch = null;
     environment.deployedBy = null;
+    environment.deployedByTeam = null;
     environment.deployedAt = null;
     await environment.save();
 

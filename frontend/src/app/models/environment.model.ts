@@ -11,9 +11,11 @@ export interface Environment {
   _id?: string;
   name: string;
   team: string;
+  shared?: boolean;
   status: 'Libre' | 'Ocupado';
   branch: string | null;
   deployedBy: string | null;
+  deployedByTeam?: string | null;
   deployedAt: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
