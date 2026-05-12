@@ -6,6 +6,12 @@
 @tailwind components;
 @tailwind utilities;
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html,
 body {
   height: 100%;
@@ -28,10 +34,17 @@ body {
     box-shadow: none !important;
     border-radius: 1rem !important;
     overflow: visible !important;
+    padding: 0 !important;
   }
 
   .mat-mdc-dialog-container {
     --mdc-dialog-container-color: transparent;
+    padding: 0 !important;
+  }
+
+  // Remove MDC inner container padding
+  .mdc-dialog__container {
+    padding: 0 !important;
   }
 }
 

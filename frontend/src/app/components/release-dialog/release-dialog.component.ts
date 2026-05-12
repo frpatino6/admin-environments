@@ -7,6 +7,7 @@ import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/materia
   standalone: true,
   imports: [FormsModule, MatDialogModule],
   templateUrl: './release-dialog.component.html',
+  styleUrl: './release-dialog.component.scss',
 })
 export class ReleaseDialogComponent {
   releasedBy = signal('');

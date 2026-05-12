@@ -1,4 +1,4 @@
-<div class="min-h-screen flex flex-col items-center justify-center px-4 py-10 font-sans">
+<div class="min-h-screen flex flex-col items-center px-4 py-8 sm:px-6 lg:px-10 font-sans">
 
   <!-- Header -->
   <header class="mb-12 text-center animate-fade-in">
@@ -20,7 +20,7 @@
 
   <!-- Skeleton -->
   @if (loading()) {
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl w-full">
+    <div class="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl">
       @for (i of [1, 2, 3]; track i) {
         <div class="h-44 rounded-2xl border border-white/5 bg-white/[0.03] animate-skeleton"></div>
       }
@@ -29,7 +29,7 @@
 
   <!-- Team cards -->
   @if (!loading()) {
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl w-full">
+    <div class="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl">
       @for (team of teams(); track team.slug) {
         <button
           type="button"
