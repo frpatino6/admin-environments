@@ -94,20 +94,32 @@
   }
 
   <!-- ── Action buttons ── -->
-  <div class="mt-auto min-h-[42px]">
+  <div class="mt-auto min-h-[48px]">
     @if (isOccupied()) {
-      <app-action-button
-        class="animate-fade-in"
-        (onClick)="releaseClicked.emit(env())" />
+      <button
+        type="button"
+        (click)="releaseClicked.emit(env())"
+        class="animate-fade-in flex w-full items-center justify-center gap-2 rounded-xl
+               bg-gradient-to-r from-red-600 to-rose-600
+               px-4 py-3 text-sm font-medium text-white
+               transition-all duration-200 ease-in-out
+               hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(220,38,38,0.45)]
+               active:scale-[0.98]">
+        <svg class="h-4 w-4 opacity-90" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M13.5 10.5V6.75a4.5 4.5 0 1 1 9 0v3.75M3.75 21.75h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H3.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+        </svg>
+        Liberar Ambiente
+      </button>
     } @else {
       <button
         type="button"
         (click)="deployClicked.emit(env())"
         class="animate-fade-in flex w-full items-center justify-center gap-2 rounded-xl
                bg-gradient-to-r from-violet-600 to-indigo-600
-               px-4 py-2.5 text-sm font-medium text-white
+               px-4 py-3 text-sm font-medium text-white
                transition-all duration-200 ease-in-out
-               hover:scale-[1.02] hover:shadow-[0_0_15px_rgba(124,58,237,0.4)]
+               hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(124,58,237,0.45)]
                active:scale-[0.98]">
         <svg class="h-4 w-4 opacity-90" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
