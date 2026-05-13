@@ -3,6 +3,7 @@ export interface Team {
   slug: string;
   displayName: string;
   environments: string[];
+  slackWebhookUrl?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }

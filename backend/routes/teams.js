@@ -82,6 +82,19 @@ router.post('/teams/init', async (req, res) => {
   }
 });
 
+// Get single team
+router.get('/teams/:team', async (req, res) => {
+  try {
+    const team = await Team.findOne({ slug: req.params.team });
+    if (!team) {
+      return res.status(404).json({ message: 'Equipo no encontrado' });
+    }
+    res.json(team);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener equipo', error: error.message });
+  }
+});
+
 // Create team
 router.post('/teams', async (req, res) => {
   try {
@@ -99,6 +112,24 @@ router.post('/teams', async (req, res) => {
     res.status(201).json(team);
   } catch (error) {
     res.status(500).json({ message: 'Error al crear equipo', error: error.message });
+  }
+});
+
+// Update team Slack webhook
+router.patch('/teams/:team/slack-webhook', async (req, res) => {
+  try {
+    const { slackWebhookUrl } = req.body;
+    const team = await Team.findOneAndUpdate(
+      { slug: req.params.team },
+      { slackWebhookUrl: slackWebhookUrl || null },
+      { new: true }
+    );
+    if (!team) {
+      return res.status(404).json({ message: 'Equipo no encontrado' });
+    }
+    res.json({ slug: team.slug, slackWebhookUrl: team.slackWebhookUrl });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al actualizar webhook', error: error.message });
   }
 });
 
@@ -151,7 +182,8 @@ router.post('/teams/:team/environments/:name/deploy', async (req, res) => {
       performedAt: new Date()
     });
 
-    await notifyEnvironmentOccupied(environment.name, branch, deployedBy);
+    const teamDoc = await Team.findOne({ slug: team });
+    await notifyEnvironmentOccupied(environment.name, branch, deployedBy, teamDoc?.slackWebhookUrl);
 
     const io = req.app.get('io');
     io.emit('environment-updated', environment);
@@ -201,7 +233,8 @@ router.post('/teams/:team/environments/:name/release', async (req, res) => {
       metadata: { previousDeployedBy }
     });
 
-    await notifyEnvironmentReleased(environment.name, releasedBy);
+    const teamDoc = await Team.findOne({ slug: team });
+    await notifyEnvironmentReleased(environment.name, releasedBy, teamDoc?.slackWebhookUrl);
 
     const io = req.app.get('io');
     io.emit('environment-updated', environment);
