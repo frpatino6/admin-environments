@@ -17,6 +17,7 @@ import { TeamService } from '../../services/team.service';
 import { EnvironmentCardComponent } from '../environment-card/environment-card.component';
 import { DeployDialogComponent } from '../deploy-dialog/deploy-dialog.component';
 import { ReleaseDialogComponent } from '../release-dialog/release-dialog.component';
+import { SlackWebhookDialogComponent } from '../slack-webhook-dialog/slack-webhook-dialog.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -127,6 +128,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
           error: (e) => this.notify(e.error?.message ?? 'Error al liberar ambiente'),
         });
       }
+    });
+  }
+
+  openSlackConfig(): void {
+    this.teamService.getTeam(this.teamSlug()).subscribe({
+      next: (team) => {
+        const ref = this.dialog.open(SlackWebhookDialogComponent, {
+          width: '520px',
+          panelClass: 'glass-dialog',
+          data: { teamDisplayName: team.displayName, currentUrl: team.slackWebhookUrl ?? null },
+        });
+        ref.afterClosed().subscribe((result) => {
+          if (result !== undefined) {
+            this.teamService.updateSlackWebhook(this.teamSlug(), result.webhookUrl).subscribe({
+              next: () => this.notify(result.webhookUrl ? 'Webhook de Slack configurado' : 'Webhook de Slack eliminado'),
+              error: () => this.notify('Error al guardar el webhook'),
+            });
+          }
+        });
+      },
+      error: () => this.notify('Error al cargar configuración del equipo'),
     });
   }
 

@@ -5,7 +5,12 @@
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(npm install *)",
       "Bash(npx ng *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(git checkout *)",
+      "Bash(npm run *)",
+      "Bash(nvm list *)",
+      "Bash(nvm use *)",
+      "PowerShell(nvm use *)"
     ]
   }
 }

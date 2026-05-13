@@ -1,0 +1,54 @@
+<div class="relative overflow-hidden rounded-2xl border border-white/15 bg-[#0f0f2a]/95 px-10 py-8 shadow-glass-lg backdrop-blur-[16px]">
+  <!-- Top glow line -->
+  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent"></div>
+
+  <!-- Header -->
+  <div class="mb-6 flex items-center gap-3">
+    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 ring-1 ring-violet-500/25">
+      <svg class="h-5 w-5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+      </svg>
+    </div>
+    <div>
+      <h2 class="text-base font-bold text-white">Slack Webhook — {{ data.teamDisplayName }}</h2>
+      <p class="text-xs text-slate-500">Notificaciones de deploy y release para este equipo</p>
+    </div>
+  </div>
+
+  <!-- Field -->
+  <div>
+    <label class="mb-1.5 block text-xs font-medium text-slate-400">URL del Webhook</label>
+    <div class="relative">
+      <div class="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+        <svg class="h-4 w-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+        </svg>
+      </div>
+      <input [ngModel]="webhookUrl()" (ngModelChange)="webhookUrl.set($event)" (keyup.enter)="isValid() && onSave()" placeholder="https://hooks.slack.com/services/..." [ngClass]="webhookUrl().trim() !== '' && !isValid() ? 'border-red-500/40 ring-red-500/25' : 'border-white/10'" class="w-full rounded-xl border bg-white/5 py-2.5 pl-9 pr-10 font-mono text-sm text-white placeholder-slate-700 outline-none transition-all duration-200 focus:bg-white/[0.07] focus:ring-1 focus:ring-violet-500/25" />
+      @if (webhookUrl()) {
+        <button type="button" (click)="onClear()" class="absolute inset-y-0 right-3 flex items-center text-slate-600 hover:text-slate-400 transition-colors">
+          <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      }
+    </div>
+    @if (webhookUrl().trim() !== '' && !isValid()) {
+      <p class="mt-1.5 text-xs text-red-400">URL inválida. Debe comenzar con https://hooks.slack.com/</p>
+    }
+    <p class="mt-2 text-xs text-slate-600">Dejá vacío para desactivar las notificaciones de Slack.</p>
+  </div>
+
+  <!-- Actions -->
+  <div class="mt-8 flex gap-3">
+    <button (click)="onCancel()" class="flex flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-slate-400 transition-all duration-200 hover:bg-white/10 hover:text-slate-200">
+      Cancelar
+    </button>
+    <button (click)="onSave()" [disabled]="!isValid()" class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-200 hover:scale-[1.02] hover:shadow-violet-500/25 disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.98]">
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+      </svg>
+      Guardar
+    </button>
+  </div>
+</div>

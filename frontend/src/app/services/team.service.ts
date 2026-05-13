@@ -16,8 +16,19 @@ export class TeamService {
     return this.http.get<Team[]>(this.apiUrl);
   }
 
+  getTeam(slug: string): Observable<Team> {
+    return this.http.get<Team>(`${this.apiUrl}/${slug}`);
+  }
+
   initTeams(): Observable<any> {
     return this.http.post(`${this.apiUrl}/init`, {});
+  }
+
+  updateSlackWebhook(slug: string, slackWebhookUrl: string | null): Observable<{ slug: string; slackWebhookUrl: string | null }> {
+    return this.http.patch<{ slug: string; slackWebhookUrl: string | null }>(
+      `${this.apiUrl}/${slug}/slack-webhook`,
+      { slackWebhookUrl }
+    );
   }
 
   getSavedTeam(): string | null {
