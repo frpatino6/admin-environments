@@ -86,7 +86,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private setupWs(): void {
     this.wsSub = this.wsService.onEnvironmentUpdate().subscribe({
       next: (updated) => {
-        if (updated.team !== this.teamSlug()) return;
+        if (updated.team !== this.teamSlug() && !updated.shared) return;
         this.environments.update((envs) => {
           const idx = envs.findIndex((e) => e._id === updated._id);
           const next = [...envs];

@@ -5,6 +5,16 @@ const Environment = require('../models/Environment');
 const EnvironmentHistory = require('../models/EnvironmentHistory');
 const { notifyEnvironmentOccupied, notifyEnvironmentReleased } = require('../services/slackService');
 
+const getSlackWebhookUrlsForEnvironment = async (environment, teamSlug) => {
+  if (environment.shared) {
+    const teams = await Team.find({ slackWebhookUrl: { $ne: null } }).select('slackWebhookUrl');
+    return teams.map((team) => team.slackWebhookUrl);
+  }
+
+  const team = await Team.findOne({ slug: teamSlug }).select('slackWebhookUrl');
+  return team?.slackWebhookUrl ?? null;
+};
+
 // List teams
 router.get('/teams', async (req, res) => {
   try {
@@ -182,8 +192,8 @@ router.post('/teams/:team/environments/:name/deploy', async (req, res) => {
       performedAt: new Date()
     });
 
-    const teamDoc = await Team.findOne({ slug: team });
-    await notifyEnvironmentOccupied(environment.name, branch, deployedBy, teamDoc?.slackWebhookUrl);
+    const slackWebhookUrls = await getSlackWebhookUrlsForEnvironment(environment, team);
+    await notifyEnvironmentOccupied(environment.name, branch, deployedBy, slackWebhookUrls);
 
     const io = req.app.get('io');
     io.emit('environment-updated', environment);
@@ -233,8 +243,8 @@ router.post('/teams/:team/environments/:name/release', async (req, res) => {
       metadata: { previousDeployedBy }
     });
 
-    const teamDoc = await Team.findOne({ slug: team });
-    await notifyEnvironmentReleased(environment.name, releasedBy, teamDoc?.slackWebhookUrl);
+    const slackWebhookUrls = await getSlackWebhookUrlsForEnvironment(environment, team);
+    await notifyEnvironmentReleased(environment.name, releasedBy, slackWebhookUrls);
 
     const io = req.app.get('io');
     io.emit('environment-updated', environment);
@@ -249,10 +259,17 @@ router.post('/teams/:team/environments/:name/release', async (req, res) => {
 router.get('/teams/:team/environments/:name/history', async (req, res) => {
   try {
     const { limit = 50 } = req.query;
-    const history = await EnvironmentHistory.find({
-      environmentName: req.params.name,
-      $or: [{ team: req.params.team }, { team: { $exists: false } }]
-    })
+    const environment = await Environment.findOne({
+      name: req.params.name,
+      $or: [{ team: req.params.team }, { shared: true }]
+    }).select('shared');
+    const query = environment?.shared
+      ? { environmentName: req.params.name }
+      : {
+          environmentName: req.params.name,
+          $or: [{ team: req.params.team }, { team: { $exists: false } }]
+        };
+    const history = await EnvironmentHistory.find(query)
       .sort({ performedAt: -1 })
       .limit(parseInt(limit));
     res.json(history);

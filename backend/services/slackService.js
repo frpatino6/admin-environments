@@ -1,31 +1,51 @@
 const axios = require('axios');
 require('dotenv').config();
 
+const normalizeWebhookUrls = (webhookUrls) => {
+  const urls = Array.isArray(webhookUrls) ? webhookUrls : [webhookUrls];
+
+  return [...new Set(
+    urls
+      .filter(Boolean)
+      .map((url) => url.trim())
+      .filter(Boolean)
+  )];
+};
+
 const sendSlackNotification = async (message, webhookUrl) => {
   try {
-    const url = webhookUrl || null;
-
-    if (!url) {
-      console.log('⚠️ Slack webhook no configurado. Mensaje:', message);
+    if (!webhookUrl) {
+      console.log('Slack webhook no configurado. Mensaje:', message);
       return;
     }
 
-    await axios.post(url, { text: message });
+    await axios.post(webhookUrl, { text: message });
 
-    console.log('✅ Notificación enviada a Slack');
+    console.log('Notificacion enviada a Slack');
   } catch (error) {
-    console.error('❌ Error enviando notificación a Slack:', error.message);
+    console.error('Error enviando notificacion a Slack:', error.message);
   }
 };
 
-const notifyEnvironmentOccupied = async (envName, branch, user, webhookUrl) => {
-  const message = `🚀 Ambiente *${envName}* ocupado con la rama *${branch}* por *${user}*.`;
-  await sendSlackNotification(message, webhookUrl);
+const sendSlackNotifications = async (message, webhookUrls) => {
+  const urls = normalizeWebhookUrls(webhookUrls);
+
+  if (!urls.length) {
+    console.log('Slack webhook no configurado. Mensaje:', message);
+    return;
+  }
+
+  await Promise.all(urls.map((url) => sendSlackNotification(message, url)));
 };
 
-const notifyEnvironmentReleased = async (envName, releasedBy, webhookUrl) => {
-  const message = `✅ Ambiente *${envName}* ha sido liberado por *${releasedBy}* y está disponible para despliegue.`;
-  await sendSlackNotification(message, webhookUrl);
+const notifyEnvironmentOccupied = async (envName, branch, user, webhookUrls) => {
+  const message = `Ambiente *${envName}* ocupado con la rama *${branch}* por *${user}*.`;
+  await sendSlackNotifications(message, webhookUrls);
+};
+
+const notifyEnvironmentReleased = async (envName, releasedBy, webhookUrls) => {
+  const message = `Ambiente *${envName}* ha sido liberado por *${releasedBy}* y esta disponible para despliegue.`;
+  await sendSlackNotifications(message, webhookUrls);
 };
 
 module.exports = {
