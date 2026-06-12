@@ -26,7 +26,7 @@ cd backend
 npm install
 ```
 
-### 3. Configurar Slack Webhook
+### 3. Configurar Slack Webhook por equipo
 
 1. Ve a: https://api.slack.com/apps
 2. Click "Create New App" → "From scratch"
@@ -38,10 +38,17 @@ npm install
 8. Selecciona el canal (ej: #dev-notifications)
 9. Copia la URL del webhook
 
-Edita `backend/.env`:
-```env
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXX
+El webhook no se guarda en `backend/.env`. Se guarda por equipo en MongoDB, en `Team.slackWebhookUrl`.
+
+Puedes configurarlo desde el boton "Slack" del dashboard o con la API:
+
+```bash
+curl -X PATCH http://localhost:3000/api/teams/xqo/slack-webhook \
+  -H "Content-Type: application/json" \
+  -d '{"slackWebhookUrl":"https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXX"}'
 ```
+
+Usa el slug del equipo que corresponda, por ejemplo `xqo`, `xqa` o `xqb`.
 
 ### 4. Inicializar MongoDB
 
@@ -136,11 +143,13 @@ PORT=3001
 - Ve a: https://cloud.mongodb.com/ → Network Access → Add IP Address
 
 **Slack no notifica:**
+- Verifica que el equipo tenga `slackWebhookUrl` configurado en MongoDB
+- Revisa los logs del backend para confirmar que no aparezca "Slack webhook no configurado"
 ```bash
 # Prueba el webhook manualmente
 curl -X POST -H 'Content-type: application/json' \
 --data '{"text":"Hola desde Admin Environments!"}' \
-TU_SLACK_WEBHOOK_URL
+URL_DEL_WEBHOOK_DE_SLACK
 ```
 
 ## 📞 Soporte

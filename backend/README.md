@@ -11,7 +11,15 @@ npm install
 ## Configuración
 
 1. Copia `.env.example` a `.env`
-2. Configura tu Slack Webhook URL en el archivo `.env`
+2. Configura `MONGODB_URI`, `DNS_SERVERS` y `PORT` segun tu entorno
+3. Configura Slack por equipo desde el dashboard o con:
+   ```bash
+   curl -X PATCH http://localhost:3000/api/teams/xqo/slack-webhook \
+     -H "Content-Type: application/json" \
+     -d '{"slackWebhookUrl":"https://hooks.slack.com/services/TU_WEBHOOK_AQUI"}'
+   ```
+
+Los webhooks de Slack se guardan en MongoDB, en `Team.slackWebhookUrl`; no se leen desde `.env`.
 
 ## Ejecución
 

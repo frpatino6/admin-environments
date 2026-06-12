@@ -25,13 +25,17 @@
    - Verás una URL que empieza con: `https://hooks.slack.com/services/...`
    - Copia esta URL completa
 
-6. **Configura el Backend:**
-   - Abre `backend/.env`
-   - Reemplaza:
+6. **Configura el webhook del equipo:**
+   - El webhook no se guarda en `backend/.env`.
+   - Cada equipo guarda su URL en MongoDB, en `Team.slackWebhookUrl`.
+   - Puedes configurarlo desde el boton "Slack" del dashboard.
+   - Tambien puedes configurarlo por API:
+     ```bash
+     curl -X PATCH http://localhost:3000/api/teams/xqo/slack-webhook \
+       -H "Content-Type: application/json" \
+       -d '{"slackWebhookUrl":"https://hooks.slack.com/services/TU_WEBHOOK_AQUI"}'
      ```
-     SLACK_WEBHOOK_URL=https://hooks.slack.com/services/TU_WEBHOOK_AQUI
-     ```
-   - Guarda el archivo
+   - Cambia `xqo` por el slug del equipo que corresponda.
 
 7. **Prueba el Webhook:**
    ```bash
@@ -42,7 +46,7 @@
 
 8. **Verifica:**
    - Deberías ver el mensaje en tu canal de Slack
-   - Si funciona, reinicia el backend y listo!
+   - Si funciona, guarda la URL para el equipo correspondiente.
 
 ### Canales Recomendados
 
@@ -73,4 +77,5 @@ const message = `🚀 *AMBIENTE OCUPADO*\nAmbiente: ${envName}\nRama: ${branch}\
 **No llegan notificaciones:**
 - Verifica que el backend está corriendo
 - Revisa los logs del backend para ver errores
-- Confirma que el `.env` tiene la URL correcta
+- Confirma que el equipo tiene `slackWebhookUrl` configurado en MongoDB
+- Para ambientes compartidos, se notifica a todos los equipos que tengan webhook configurado

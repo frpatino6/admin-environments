@@ -64,7 +64,7 @@ admin-environments/
 - **Node.js** >= 20.19.0 (recomendado v22.x)
 - **npm** >= 8.0.0
 - **MongoDB Atlas** (cuenta configurada)
-- **Slack Webhook URL**
+- **Slack Incoming Webhook URL** para cada equipo
 
 ### 1. Clonar el Repositorio
 
@@ -85,15 +85,22 @@ Edita el archivo `.env` con tus credenciales:
 ```env
 MONGODB_URI=mongodb+srv://frpatino6Coffe:s4ntiago@mycoffecluster.yerjpro.mongodb.net/environment-algo
 PORT=3000
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
 ```
 
-**Para obtener tu Slack Webhook URL:**
+Slack no se configura en `.env`. Cada equipo guarda su webhook en MongoDB, en el campo `Team.slackWebhookUrl`.
+
+**Para obtener y configurar tu Slack Webhook URL:**
 1. Ve a https://api.slack.com/apps
 2. Crea una nueva app o selecciona una existente
 3. Habilita "Incoming Webhooks"
 4. Crea un nuevo webhook para tu canal deseado
-5. Copia la URL y pégala en el `.env`
+5. Copia la URL
+6. Configurala desde el boton "Slack" del dashboard, o por API:
+   ```bash
+   curl -X PATCH http://localhost:3000/api/teams/xqo/slack-webhook \
+     -H "Content-Type: application/json" \
+     -d '{"slackWebhookUrl":"https://hooks.slack.com/services/YOUR/WEBHOOK/URL"}'
+   ```
 
 ### 3. Configurar Frontend
 
@@ -271,7 +278,8 @@ POST /api/environments/init
 - Usa `nvm` para gestionar versiones de Node.js
 
 ### Slack no recibe notificaciones
-- Verifica que `SLACK_WEBHOOK_URL` está correctamente configurada
+- Verifica que el equipo tenga `slackWebhookUrl` configurado en MongoDB
+- Puedes actualizarlo desde el boton "Slack" del dashboard o con `PATCH /api/teams/:team/slack-webhook`
 - Prueba el webhook con curl:
   ```bash
   curl -X POST -H 'Content-type: application/json' \

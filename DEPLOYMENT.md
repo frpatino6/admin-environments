@@ -127,9 +127,10 @@ railway init
 ```bash
 railway variables set MONGODB_URI="mongodb+srv://frpatino6Coffe:s4ntiago@mycoffecluster.yerjpro.mongodb.net/environment-algo"
 railway variables set PORT=3000
-railway variables set SLACK_WEBHOOK_URL="<tu-webhook-url>"
 railway variables set NODE_ENV="production"
 ```
+
+Slack no usa variable de entorno. Los webhooks se configuran por equipo en MongoDB, en `Team.slackWebhookUrl`, desde el boton "Slack" del dashboard o con `PATCH /api/teams/:team/slack-webhook`.
 
 #### 6. Crear railway.json
 
@@ -209,8 +210,9 @@ Ve a https://render.com
 - **Start Command**: `cd backend && node server.js`
 - **Environment Variables**:
   - `MONGODB_URI`
-  - `SLACK_WEBHOOK_URL`
   - `PORT=3000`
+
+Los webhooks de Slack se guardan por equipo en MongoDB, no como variable de entorno del servicio.
 
 ### 3. Conectar repositorio Git
 
