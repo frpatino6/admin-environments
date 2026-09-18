@@ -141,6 +141,73 @@ curl -X POST http://localhost:3000/api/environments/test4/deploy \
 }
 ```
 
+### 7. Flujo manual de QA (registrar, solicitar, rechazar, iniciar)
+
+```bash
+# Registrar un integrante de QA para el equipo "xqo"
+curl -X POST http://localhost:3000/api/qa/members \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Ana QA", "slackUserId": "U01234567", "team": "xqo"}'
+```
+
+**Respuesta esperada:** el `QaMember` creado, con `active: true` y `lastAssignedAt: null`.
+
+```bash
+# Solicitar QA para un ticket (requesterId debe ser un QaMember del mismo equipo)
+curl -X POST http://localhost:3000/api/qa/requests \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jiraKey": "ABC-123",
+    "jiraSummary": "Nueva funcionalidad de login",
+    "requesterId": "<id del QaMember solicitante>",
+    "environmentName": "dev4",
+    "team": "xqo"
+  }'
+```
+
+**Respuesta esperada:** la solicitud queda en `status: "pending"` con un `reviewerId` asignado (el integrante activo del equipo con menor carga activa), y se envía una notificación a Slack con los botones "Iniciar QA" y "Rechazar".
+
+```bash
+# Rechazar la solicitud (reasigna automáticamente al siguiente candidato)
+curl -X POST http://localhost:3000/api/qa/requests/<id>/reject \
+  -H "Content-Type: application/json" \
+  -d '{"reason": "No tengo contexto de este módulo"}'
+```
+
+**Respuesta esperada:** la solicitud sigue en `status: "pending"` pero con un `reviewerId` distinto, y se envía una nueva notificación a Slack. Si no quedan candidatos elegibles, pasa a `status: "unassignable"`.
+
+```bash
+# Iniciar la revisión (la abre el revisor asignado, vía el link "Iniciar QA")
+curl -X POST http://localhost:3000/api/qa/requests/<id>/start
+```
+
+**Respuesta esperada:** `status: "in_progress"` y `acceptedAt` con la fecha/hora actual.
+
+## 🤖 Pruebas Automatizadas del Backend (QA)
+
+A diferencia del resto de esta guía (100% manual), el flujo de solicitud/revisión de QA sí cuenta con pruebas automatizadas — es la **primera infraestructura de testing automatizado de este backend**.
+
+### Ejecutar las pruebas
+
+```bash
+cd backend
+node --test test/
+```
+
+Usa el test runner nativo de Node.js (`node --test`, ver el script `test` en `backend/package.json`) — no hay dependencia de Jest/Mocha.
+
+> Dos de los archivos (`qaRequestsRetry.test.js` y `qaRequestsTeamScoping.test.js`) se conectan a la base de datos real configurada en `backend/.env` — el proyecto no tiene una dependencia de MongoDB en memoria. Crean fixtures claramente marcadas (`test-retry-*`, `test-team-scoping-*`, prefijo de jiraKey `TEST-*`) y las limpian en `after()` incluso si una prueba falla.
+
+### Qué cubre cada archivo
+
+| Archivo | Cubre |
+|---|---|
+| `test/qaAssignment.test.js` | El algoritmo puro de asignación (`pickReviewer`/`compareByQueuePriority`): excluye al solicitante, prioriza menor carga activa, desempata por `lastAssignedAt` más antiguo (nunca asignado gana el desempate), y acumula exclusiones de múltiples rechazos en una sola llamada. |
+| `test/qaRequestsService.test.js` | `computeExcludedReviewerIds`: acumula todos los rechazadores (no solo el último), deduplica ids repetidos y soporta valores tipo `ObjectId` vía `toString()`. |
+| `test/qaRequestsInvariant.test.js` | Prueba de regresión del invariante "el solicitante nunca puede terminar siendo su propio revisor", simulando ciclos sucesivos de rechazo hasta agotar el pool de candidatos. |
+| `test/qaRequestsRetry.test.js` | `retryQaRequest`: reabre una solicitud `changes_requested` de vuelta a `pending` con el **mismo** revisor (sin reasignar), resetea `lastReminderAt`/`completedAt`, y valida los errores 400/404. |
+| `test/qaRequestsTeamScoping.test.js` | `buildCandidates`/`createQaRequest`: los rosters de QA están aislados por equipo (nunca se filtra el roster de otro equipo), se rechaza un solicitante que no pertenece al equipo de la solicitud, y se bloquea el placeholder `"shared"`. |
+
 ## 🎨 Pruebas del Frontend
 
 ### Prueba Manual Completa

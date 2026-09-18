@@ -5,6 +5,35 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-09-18
+
+### 🎉 Flujo de Solicitud y Revisión de QA
+
+Se agregó un flujo completo de solicitud y revisión de QA por equipo, con asignación automática de revisor y notificaciones a Slack.
+
+### ✨ Agregado
+
+#### Backend
+- Modelo `QaMember`: roster de revisores de QA, ahora por equipo (`team`, `active`, `lastAssignedAt`)
+- Modelo `QaRequest`: solicitud de QA con estado (`pending`/`in_progress`/`approved`/`changes_requested`/`unassignable`), historial de rechazos y timestamps
+- `services/qaAssignment.js`: algoritmo puro de asignación — excluye al solicitante (y a quienes ya rechazaron la solicitud), prioriza menor carga activa, desempata por quien lleva más tiempo sin ser asignado
+- `services/qaRequestsService.js`: creación, inicio, rechazo (con reasignación automática), reintento (mismo revisor) y finalización de solicitudes de QA, con guardas de team-scoping y concurrencia
+- `services/qaSlackService.js`: notificaciones a Slack que reutilizan el webhook por equipo ya existente — sin necesidad de bot token, Interactivity ni Signing Secret
+- `jobs/qaEscalation.js`: job en segundo plano (`setInterval`) que reenvía (no reasigna) recordatorios de solicitudes pendientes
+- `routes/qa.js`: endpoints `/api/qa/members` y `/api/qa/requests` (ver README.md)
+- Nuevas variables de entorno: `FRONTEND_BASE_URL`, `JIRA_BASE_URL`, `QA_REMINDER_INTERVAL_HOURS`, `QA_ESCALATION_CHECK_INTERVAL_MIN`
+- Primera infraestructura de pruebas automatizadas del backend (`backend/test/`, ejecutable con `node --test test/`)
+
+#### Frontend
+- `components/qa-dashboard/`: página `teams/:slug/qa` con la cola de solicitudes del equipo y gestión de su roster de QA
+- `components/qa-request-dialog/`: solicitar QA desde una tarjeta de ambiente ocupado
+- `components/qa-reject-dialog/`, `components/qa-reject-page/`, `components/qa-start-page/`: flujo de rechazo (con razón obligatoria) e inicio de revisión, alcanzados desde los enlaces de Slack
+- Indicador de estado de QA en `environment-card` y acción para solicitar QA en `dashboard`
+- Nuevas rutas: `teams/:slug/qa`, `qa/requests/:id/start`, `qa/requests/:id/reject`
+
+#### Documentación
+- CLAUDE.md, README.md, TESTING.md y SLACK_SETUP.md actualizados con el flujo de QA
+
 ## [1.0.0] - 2026-02-02
 
 ### 🎉 Lanzamiento Inicial

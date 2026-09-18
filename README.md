@@ -13,6 +13,7 @@ Esta aplicación permite al equipo de desarrollo:
 - ✅ Liberar ambientes cuando están disponibles
 - ✅ Recibir notificaciones automáticas en Slack
 - ✅ Evitar confusiones sobre qué rama está desplegada
+- ✅ Solicitar y gestionar revisiones de QA por equipo, con asignación automática de revisor
 
 ## 🏗️ Arquitectura
 
@@ -251,6 +252,44 @@ POST /api/environments/init
 **Cuando se libera un ambiente:**
 ```
 ✅ Ambiente test4 ha sido liberado y está disponible para despliegue.
+```
+
+## 🔍 Solicitudes y Revisión de QA
+
+Además de gestionar el estado de los ambientes, la aplicación permite solicitar y gestionar revisiones de QA directamente desde un ambiente ocupado.
+
+- ✅ Solicitar QA con un clic desde la tarjeta del ambiente ocupado (ticket de Jira + resumen)
+- ✅ Asignación automática del siguiente revisor disponible en el **roster de QA del mismo equipo**, excluyendo al solicitante y priorizando menor carga activa (desempate: quien lleva más tiempo sin ser asignado)
+- ✅ Notificación al mismo webhook de Slack del equipo (el que ya usan los despliegues/releases) con botones "Iniciar QA" y "Rechazar"
+- ✅ Rechazar una solicitud requiere indicar una razón y reasigna automáticamente al siguiente candidato, excluyendo a todos los que ya rechazaron esa solicitud (nunca reasigna solo por falta de respuesta — solo se reenvía un recordatorio)
+- ✅ Reintentar QA con el mismo revisor con un clic, una vez atendidos los cambios solicitados
+- ✅ Página `teams/:slug/qa` con la cola completa de solicitudes del equipo y gestión de su roster de revisores
+
+### Variables de entorno para QA
+
+```env
+FRONTEND_BASE_URL=http://localhost:4200
+JIRA_BASE_URL=
+QA_REMINDER_INTERVAL_HOURS=4
+QA_ESCALATION_CHECK_INTERVAL_MIN=15
+```
+
+> No se requiere ninguna configuración adicional de Slack (sin bot token, sin Interactivity habilitada): los botones "Iniciar QA" y "Rechazar" son enlaces que abren páginas del frontend desplegado, y las notificaciones reutilizan el mismo Incoming Webhook por equipo que ya usan despliegues y releases. Ver [SLACK_SETUP.md](SLACK_SETUP.md).
+
+### Endpoints de QA
+
+```http
+GET   /api/qa/members?team=:team
+POST  /api/qa/members
+PATCH /api/qa/members/:id/active
+
+GET   /api/qa/requests
+GET   /api/qa/requests/:id
+POST  /api/qa/requests
+POST  /api/qa/requests/:id/start
+POST  /api/qa/requests/:id/reject
+POST  /api/qa/requests/:id/retry
+POST  /api/qa/requests/:id/complete
 ```
 
 ## 🎨 Características de UI

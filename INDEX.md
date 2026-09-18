@@ -40,6 +40,14 @@
 | [backend/models/Environment.js](backend/models/Environment.js) | Schema MongoDB |
 | [backend/services/slackService.js](backend/services/slackService.js) | Integración Slack |
 | [backend/config/db.js](backend/config/db.js) | Configuración MongoDB |
+| [backend/routes/qa.js](backend/routes/qa.js) | Rutas API REST de QA (miembros y solicitudes) |
+| [backend/models/QaMember.js](backend/models/QaMember.js) | Schema del roster de revisores de QA (por equipo) |
+| [backend/models/QaRequest.js](backend/models/QaRequest.js) | Schema de solicitudes de QA |
+| [backend/services/qaAssignment.js](backend/services/qaAssignment.js) | Algoritmo puro de asignación de revisor |
+| [backend/services/qaRequestsService.js](backend/services/qaRequestsService.js) | Lógica de negocio de solicitudes de QA |
+| [backend/services/qaSlackService.js](backend/services/qaSlackService.js) | Notificaciones de QA a Slack |
+| [backend/jobs/qaEscalation.js](backend/jobs/qaEscalation.js) | Job de recordatorios de QA vencidos |
+| [backend/test/](backend/test/) | Pruebas automatizadas de QA (`node --test test/`) |
 
 ## 🎨 Frontend
 
@@ -51,6 +59,13 @@
 | [frontend/src/app/components/deploy-dialog/](frontend/src/app/components/deploy-dialog/) | Diálogo de despliegue |
 | [frontend/src/app/services/environment.service.ts](frontend/src/app/services/environment.service.ts) | Servicio HTTP |
 | [frontend/src/app/models/environment.model.ts](frontend/src/app/models/environment.model.ts) | Interfaces TypeScript |
+| [frontend/src/app/components/qa-dashboard/](frontend/src/app/components/qa-dashboard/) | Página `teams/:slug/qa`: cola de QA del equipo y gestión del roster |
+| [frontend/src/app/components/qa-request-dialog/](frontend/src/app/components/qa-request-dialog/) | Diálogo para solicitar QA desde un ambiente ocupado |
+| [frontend/src/app/components/qa-reject-dialog/](frontend/src/app/components/qa-reject-dialog/) | Diálogo para rechazar una solicitud (con razón) |
+| [frontend/src/app/components/qa-reject-page/](frontend/src/app/components/qa-reject-page/) | Página del enlace "Rechazar" de Slack |
+| [frontend/src/app/components/qa-start-page/](frontend/src/app/components/qa-start-page/) | Página del enlace "Iniciar QA" de Slack |
+| [frontend/src/app/services/qa.service.ts](frontend/src/app/services/qa.service.ts) | Servicio HTTP para `/api/qa` |
+| [frontend/src/app/models/qa.model.ts](frontend/src/app/models/qa.model.ts) | Interfaces TypeScript de QA |
 
 ## 🛠️ Herramientas de Desarrollo
 

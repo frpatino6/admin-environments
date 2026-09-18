@@ -48,6 +48,18 @@
    - Deberías ver el mensaje en tu canal de Slack
    - Si funciona, guarda la URL para el equipo correspondiente.
 
+### Uso del mismo Webhook para el flujo de QA
+
+El flujo de solicitud/revisión de QA (ver `TESTING.md` y `CLAUDE.md`) **reutiliza exactamente este mismo Incoming Webhook por equipo** — no hace falta crear una Slack App aparte ni configurar nada adicional.
+
+- No se requiere un bot token.
+- No se requiere habilitar "Interactivity & Shortcuts".
+- No se requiere un Signing Secret.
+
+Los botones "Iniciar QA" y "Rechazar" que aparecen en las notificaciones de Slack son botones de tipo `url` (Block Kit): simplemente abren una página del frontend desplegado (`${FRONTEND_BASE_URL}/qa/requests/:id/start` y `.../reject`), no envían ningún callback a una Slack App. Esto fue una decisión de diseño deliberada, no un paso pendiente — si ves esta sección y te preguntas si falta habilitar algo en la app de Slack, la respuesta es no.
+
+Si ya configuraste el webhook del equipo siguiendo los pasos de arriba, el flujo de QA para ese equipo ya está listo.
+
 ### Canales Recomendados
 
 - `#dev-notifications` - Para notificaciones de desarrollo
