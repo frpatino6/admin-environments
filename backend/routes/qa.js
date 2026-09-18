@@ -1,5 +1,4 @@
 const express = require('express');
-const crypto = require('crypto');
 const router = express.Router();
 const QaMember = require('../models/QaMember');
 const QaRequest = require('../models/QaRequest');
@@ -138,6 +137,15 @@ router.post('/requests/:id/reject', async (req, res) => {
   }
 });
 
+router.post('/requests/:id/retry', async (req, res) => {
+  try {
+    const qaRequest = await qaRequestsService.retryQaRequest(req.params.id);
+    res.json(qaRequest);
+  } catch (error) {
+    handleError(res, error, 'Error al reintentar la solicitud de QA');
+  }
+});
+
 router.post('/requests/:id/complete', async (req, res) => {
   try {
     const { result } = req.body;
@@ -146,60 +154,6 @@ router.post('/requests/:id/complete', async (req, res) => {
   } catch (error) {
     handleError(res, error, 'Error al completar la solicitud de QA');
   }
-});
-
-// ── Slack interactivity ─────────────────────────────────────────────────
-
-// Verifies the request truly comes from Slack: v0=hex-HMAC-SHA256(signingSecret,
-// `v0:{timestamp}:{rawBody}`) must match X-Slack-Signature, and the timestamp
-// must be within 5 minutes to prevent replay attacks.
-const verifySlackSignature = (req) => {
-  const signingSecret = process.env.QA_SLACK_SIGNING_SECRET;
-  if (!signingSecret) return false;
-
-  const timestamp = req.headers['x-slack-request-timestamp'];
-  const signature = req.headers['x-slack-signature'];
-  if (!timestamp || !signature) return false;
-
-  const fiveMinutesAgo = Math.floor(Date.now() / 1000) - 60 * 5;
-  if (Number(timestamp) < fiveMinutesAgo) return false;
-
-  const rawBody = req.rawBody ? req.rawBody.toString('utf8') : '';
-  const baseString = `v0:${timestamp}:${rawBody}`;
-  const hmac = crypto.createHmac('sha256', signingSecret).update(baseString).digest('hex');
-  const computedSignature = `v0=${hmac}`;
-
-  try {
-    return crypto.timingSafeEqual(Buffer.from(computedSignature), Buffer.from(signature));
-  } catch {
-    return false;
-  }
-};
-
-router.post('/slack/interactions', async (req, res) => {
-  if (!verifySlackSignature(req)) {
-    return res.status(401).send('Firma inválida');
-  }
-
-  let payload;
-  try {
-    payload = JSON.parse(req.body.payload);
-  } catch (error) {
-    return res.status(400).send('Payload inválido');
-  }
-
-  const action = payload?.actions?.[0];
-
-  if (action?.action_id === 'qa_start') {
-    try {
-      await qaRequestsService.startQa(action.value);
-    } catch (error) {
-      console.error('Error procesando acción qa_start de Slack:', error.message);
-    }
-  }
-  // Other action_ids (e.g. the "Rechazar" url button) need no server-side handling.
-
-  res.status(200).send('');
 });
 
 module.exports = router;

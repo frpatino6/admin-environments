@@ -122,7 +122,13 @@
                           Rechazar
                         </button>
                       }
-                      @if (req.status === 'unassignable' || req.status === 'approved' || req.status === 'changes_requested') {
+                      @if (req.status === 'changes_requested') {
+                        <button (click)="onRetry(req)"
+                          class="rounded-lg bg-orange-600/80 px-2.5 py-1.5 text-xs font-medium text-white transition-all hover:bg-orange-600">
+                          Pedir revisión de nuevo
+                        </button>
+                      }
+                      @if (req.status === 'unassignable' || req.status === 'approved') {
                         <span class="text-xs text-slate-600">—</span>
                       }
                     </div>

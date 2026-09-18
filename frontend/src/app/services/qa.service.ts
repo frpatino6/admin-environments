@@ -54,6 +54,10 @@ export class QaService {
     return this.http.post<QaRequest>(`${this.baseUrl}/requests/${id}/reject`, { reason });
   }
 
+  retryRequest(id: string): Observable<QaRequest> {
+    return this.http.post<QaRequest>(`${this.baseUrl}/requests/${id}/retry`, {});
+  }
+
   completeRequest(id: string, result: 'approved' | 'changes_requested' = 'approved'): Observable<QaRequest> {
     return this.http.post<QaRequest>(`${this.baseUrl}/requests/${id}/complete`, { result });
   }

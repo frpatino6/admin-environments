@@ -22,13 +22,8 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
-// Capture the raw body so Slack request-signature verification (HMAC over the
-// exact bytes received) can happen in routes/qa.js — doesn't affect normal JSON parsing.
-const captureRawBody = (req, res, buf) => {
-  req.rawBody = buf;
-};
-app.use(express.json({ verify: captureRawBody }));
-app.use(express.urlencoded({ extended: true, verify: captureRawBody }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Hacer io accesible en las rutas
 app.set('io', io);

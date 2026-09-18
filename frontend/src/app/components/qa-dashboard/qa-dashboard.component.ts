@@ -164,6 +164,13 @@ export class QaDashboardComponent implements OnInit {
     });
   }
 
+  onRetry(req: QaRequest): void {
+    this.qaService.retryRequest(req._id).subscribe({
+      next: () => { this.notify('Solicitud reabierta para el mismo revisor'); this.refreshRequests(); },
+      error: (e) => this.notify(e.error?.message ?? 'Error al reabrir la solicitud'),
+    });
+  }
+
   onAddMember(): void {
     if (!this.canAddMember()) return;
     const name = this.newMemberName().trim();

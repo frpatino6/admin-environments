@@ -31,6 +31,27 @@ const jiraLink = (qaRequest) => {
   return null;
 };
 
+// The "Iniciar QA" / "Rechazar" action buttons attached to any Slack message
+// that asks a reviewer to act on a request — the initial assignment, a
+// reminder, and re-opening after changes were addressed all use these same
+// two url-type buttons pointed at this same request's id.
+const qaActionButtons = (qaRequest) => [
+  {
+    type: 'button',
+    text: { type: 'plain_text', text: 'Iniciar QA', emoji: true },
+    style: 'primary',
+    action_id: 'qa_start_link',
+    url: `${FRONTEND_BASE_URL}/qa/requests/${qaRequest._id}/start`
+  },
+  {
+    type: 'button',
+    text: { type: 'plain_text', text: 'Rechazar', emoji: true },
+    style: 'danger',
+    action_id: 'qa_reject_link',
+    url: `${FRONTEND_BASE_URL}/qa/requests/${qaRequest._id}/reject`
+  }
+];
+
 // Sends (or re-sends, when options.isReminder) the assignment notification for a
 // QA request to the reviewer currently set on it, via the environment's team webhook.
 const notifyQaAssigned = async (qaRequest, options = {}) => {
@@ -67,22 +88,7 @@ const notifyQaAssigned = async (qaRequest, options = {}) => {
         },
         {
           type: 'actions',
-          elements: [
-            {
-              type: 'button',
-              text: { type: 'plain_text', text: 'Iniciar QA', emoji: true },
-              style: 'primary',
-              action_id: 'qa_start',
-              value: String(qaRequest._id)
-            },
-            {
-              type: 'button',
-              text: { type: 'plain_text', text: 'Rechazar', emoji: true },
-              style: 'danger',
-              action_id: 'qa_reject_link',
-              url: `${FRONTEND_BASE_URL}/qa/requests/${qaRequest._id}/reject`
-            }
-          ]
+          elements: qaActionButtons(qaRequest)
         }
       ]
     };
@@ -90,6 +96,54 @@ const notifyQaAssigned = async (qaRequest, options = {}) => {
     await postToSlack(payload, webhookUrl);
   } catch (error) {
     console.error('Error preparando notificacion QA a Slack:', error.message);
+  }
+};
+
+// Re-opens the conversation with the SAME reviewer after the developer
+// addressed the requested changes (see qaRequestsService.retryQaRequest) —
+// same action buttons as a fresh assignment, so the reviewer can start,
+// or reject again, this second pass.
+const notifyQaChangesAddressed = async (qaRequest) => {
+  try {
+    if (!qaRequest.reviewerId) {
+      console.log('QA: solicitud sin revisor, no se envia notificacion Slack');
+      return;
+    }
+
+    const reviewer = await QaMember.findById(qaRequest.reviewerId).select('slackUserId name');
+    if (!reviewer) {
+      console.log('QA: revisor no encontrado, no se envia notificacion Slack');
+      return;
+    }
+
+    const webhookUrl = await getTeamWebhookUrl(qaRequest.team);
+    const link = jiraLink(qaRequest);
+    const ticketLine = link
+      ? `<${link}|${qaRequest.jiraKey}>: ${qaRequest.jiraSummary}`
+      : `*${qaRequest.jiraKey}*: ${qaRequest.jiraSummary}`;
+
+    const text = `Cambios realizados para *${qaRequest.jiraKey}* — por favor revisar de nuevo`;
+
+    const payload = {
+      text,
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `:repeat: *Cambios solicitados atendidos*\n${ticketLine}\nAmbiente: *${qaRequest.environmentName}*\nSe realizaron los cambios solicitados, por favor revisar de nuevo. Revisor: <@${reviewer.slackUserId}>`
+          }
+        },
+        {
+          type: 'actions',
+          elements: qaActionButtons(qaRequest)
+        }
+      ]
+    };
+
+    await postToSlack(payload, webhookUrl);
+  } catch (error) {
+    console.error('Error preparando notificacion QA (cambios atendidos):', error.message);
   }
 };
 
@@ -141,5 +195,6 @@ const notifyQaCompleted = async (qaRequest, result) => {
 module.exports = {
   notifyQaAssigned,
   notifyQaUnassignable,
-  notifyQaCompleted
+  notifyQaCompleted,
+  notifyQaChangesAddressed
 };
