@@ -17,6 +17,16 @@ export interface QaRequestDialogResult {
   requesterId: string;
 }
 
+// Branches in this app commonly embed a Jira-style key (e.g.
+// "feature/XQA-857", "XQO-1016-XQO-1017", "perf/fix/XQO-1025"), but not
+// always (e.g. "poc/no-cretendials-webconfig"). Returns the first match,
+// uppercased to match this app's existing jiraKey convention, or null.
+export const extractJiraKey = (branch: string | null | undefined): string | null => {
+  if (!branch) return null;
+  const match = branch.match(/[A-Z][A-Z0-9]{1,9}-\d+/i);
+  return match ? match[0].toUpperCase() : null;
+};
+
 @Component({
   selector: 'app-qa-request-dialog',
   standalone: true,
@@ -47,6 +57,8 @@ export class QaRequestDialogComponent implements OnInit {
   ) {
     if (data.branch) {
       this.jiraSummary.set(data.branch);
+      const key = extractJiraKey(data.branch);
+      if (key) this.jiraKey.set(key);
     }
   }
 
