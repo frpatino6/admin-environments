@@ -1,0 +1,78 @@
+<div class="relative overflow-hidden rounded-2xl border border-white/15 bg-[#0f0f2a]/95 px-10 py-8 shadow-glass-lg backdrop-blur-[16px]">
+  <!-- Top glow line -->
+  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/40 to-transparent"></div>
+
+  <!-- Header -->
+  <div class="mb-6 flex items-center gap-3">
+    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 ring-1 ring-violet-500/25">
+      <svg class="h-5 w-5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+      </svg>
+    </div>
+    <div>
+      <h2 class="text-base font-bold text-white">Solicitar QA en {{ data.environmentName }}</h2>
+      <p class="text-xs text-slate-500">Se asignará automáticamente un revisor disponible</p>
+    </div>
+  </div>
+
+  <!-- Fields -->
+  <div class="space-y-5">
+    <div>
+      <label class="mb-1.5 block text-xs font-medium text-slate-400">Ticket de Jira</label>
+      <input
+        [ngModel]="jiraKey()"
+        (ngModelChange)="jiraKey.set($event)"
+        placeholder="Ej: PROJ-1234"
+        class="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 px-4 font-mono text-sm text-white placeholder-slate-500 outline-none transition-all duration-200 focus:border-violet-500/40 focus:bg-white/[0.07] focus:ring-1 focus:ring-violet-500/25" />
+    </div>
+
+    <div>
+      <label class="mb-1.5 block text-xs font-medium text-slate-400">Título / resumen</label>
+      <input
+        [ngModel]="jiraSummary()"
+        (ngModelChange)="jiraSummary.set($event)"
+        placeholder="Ej: Arreglar el checkout"
+        class="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 px-4 text-sm text-white placeholder-slate-500 outline-none transition-all duration-200 focus:border-violet-500/40 focus:bg-white/[0.07] focus:ring-1 focus:ring-violet-500/25" />
+    </div>
+
+    <div>
+      <label class="mb-1.5 block text-xs font-medium text-slate-400">Quién solicita</label>
+      @if (loadingMembers()) {
+        <div class="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 px-4 text-sm text-slate-600">
+          Cargando integrantes de QA…
+        </div>
+      } @else {
+        <select
+          [ngModel]="requesterId()"
+          (ngModelChange)="requesterId.set($event)"
+          class="w-full appearance-none rounded-xl border border-white/10 bg-white/5 py-2.5 px-4 text-sm text-white outline-none transition-all duration-200 focus:border-violet-500/40 focus:bg-white/[0.07] focus:ring-1 focus:ring-violet-500/25">
+          <option value="" disabled class="bg-[#0f0f2a] text-slate-600">Selecciona quién solicita</option>
+          @for (member of members(); track member._id) {
+            <option [value]="member._id" class="bg-[#0f0f2a] text-white">{{ member.name }}</option>
+          }
+        </select>
+        @if (members().length === 0) {
+          <p class="mt-1.5 text-xs text-amber-400/80">No hay integrantes de QA activos registrados.</p>
+        }
+      }
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="mt-8 flex gap-3">
+    <button
+      (click)="onCancel()"
+      class="flex flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-slate-400 transition-all duration-200 hover:bg-white/10 hover:text-slate-200">
+      Cancelar
+    </button>
+    <button
+      (click)="onConfirm()"
+      [disabled]="!isValid()"
+      class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-200 hover:scale-[1.02] hover:shadow-violet-500/25 disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.98]">
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+      </svg>
+      Solicitar QA
+    </button>
+  </div>
+</div>

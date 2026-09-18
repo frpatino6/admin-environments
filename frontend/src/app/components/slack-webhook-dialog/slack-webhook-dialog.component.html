@@ -24,7 +24,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
         </svg>
       </div>
-      <input [ngModel]="webhookUrl()" (ngModelChange)="webhookUrl.set($event)" (keyup.enter)="isValid() && onSave()" placeholder="https://hooks.slack.com/services/..." [ngClass]="webhookUrl().trim() !== '' && !isValid() ? 'border-red-500/40 ring-red-500/25' : 'border-white/10'" class="w-full rounded-xl border bg-white/5 py-2.5 pl-9 pr-10 font-mono text-sm text-white placeholder-slate-700 outline-none transition-all duration-200 focus:bg-white/[0.07] focus:ring-1 focus:ring-violet-500/25" />
+      <input [ngModel]="webhookUrl()" (ngModelChange)="webhookUrl.set($event)" (keyup.enter)="isValid() && onSave()" placeholder="https://hooks.slack.com/services/..." [ngClass]="webhookUrl().trim() !== '' && !isValid() ? 'border-red-500/40 ring-red-500/25' : 'border-white/10'" class="w-full rounded-xl border bg-white/5 py-2.5 pl-9 pr-10 font-mono text-sm text-white placeholder-slate-500 outline-none transition-all duration-200 focus:bg-white/[0.07] focus:ring-1 focus:ring-violet-500/25" />
       @if (webhookUrl()) {
         <button type="button" (click)="onClear()" class="absolute inset-y-0 right-3 flex items-center text-slate-600 hover:text-slate-400 transition-colors">
           <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
