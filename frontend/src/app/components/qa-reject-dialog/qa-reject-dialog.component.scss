@@ -1,0 +1,9 @@
+:host {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+:host > div {
+  box-sizing: border-box;
+}
