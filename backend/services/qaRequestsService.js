@@ -287,6 +287,28 @@ const rejectQaRequest = async (id, reason) => {
   return qaRequest;
 };
 
+// Reopens a 'changes_requested' request for a second pass with the SAME
+// reviewer (no buildCandidates/pickReviewer run) — they already have context
+// on this ticket, so there's no reason to re-run assignment.
+const retryQaRequest = async (id) => {
+  const qaRequest = await QaRequest.findById(id);
+  if (!qaRequest) throw new HttpError(404, 'Solicitud de QA no encontrada');
+
+  if (qaRequest.status !== 'changes_requested') {
+    throw new HttpError(400, `No se puede reintentar QA: la solicitud está en estado '${qaRequest.status}'`);
+  }
+
+  qaRequest.status = 'pending';
+  qaRequest.assignedAt = new Date();
+  qaRequest.lastReminderAt = null;
+  qaRequest.completedAt = null;
+  await qaRequest.save();
+
+  await qaSlackService.notifyQaChangesAddressed(qaRequest);
+
+  return qaRequest;
+};
+
 const completeQaRequest = async (id, result = 'approved') => {
   if (!['approved', 'changes_requested'].includes(result)) {
     throw new HttpError(400, "El resultado debe ser 'approved' o 'changes_requested'");
@@ -336,6 +358,7 @@ module.exports = {
   createQaRequest,
   startQa,
   rejectQaRequest,
+  retryQaRequest,
   completeQaRequest,
   sendOverdueReminders
 };
