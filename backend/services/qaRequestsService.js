@@ -7,6 +7,20 @@ const ACTIVE_QA_STATUSES = ['pending', 'in_progress'];
 
 const toIdString = (id) => (id ? id.toString() : id);
 
+// Broadcasts the minimal shape a QA dashboard needs to know "this team's
+// queue changed, go refetch" — reviewerId/requesterId aren't populated at
+// this layer, so we don't emit the full document. `io` is optional so
+// callers (including existing tests) that don't pass a socket server keep
+// working unchanged.
+const emitQaUpdated = (io, qaRequest) => {
+  io?.emit('qa-updated', {
+    _id: qaRequest._id,
+    team: qaRequest.team,
+    environmentName: qaRequest.environmentName,
+    status: qaRequest.status
+  });
+};
+
 class HttpError extends Error {
   constructor(status, message) {
     super(message);
@@ -115,7 +129,7 @@ const getMembersForDisplay = async (activeFilter, team) => {
   return [...orderedActive, ...(await inactiveOrdered())];
 };
 
-const createQaRequest = async ({ jiraKey, jiraSummary, jiraUrl, requesterId, environmentName, team }) => {
+const createQaRequest = async ({ jiraKey, jiraSummary, jiraUrl, requesterId, environmentName, team }, io) => {
   if (!jiraKey || !jiraSummary || !requesterId || !environmentName || !team) {
     throw new HttpError(400, 'Se requiere jiraKey, jiraSummary, requesterId, environmentName y team');
   }
@@ -178,10 +192,11 @@ const createQaRequest = async ({ jiraKey, jiraSummary, jiraUrl, requesterId, env
     await qaSlackService.notifyQaUnassignable(qaRequest);
   }
 
+  emitQaUpdated(io, qaRequest);
   return qaRequest;
 };
 
-const startQa = async (id) => {
+const startQa = async (id, io) => {
   const qaRequest = await QaRequest.findById(id);
   if (!qaRequest) throw new HttpError(404, 'Solicitud de QA no encontrada');
 
@@ -192,10 +207,11 @@ const startQa = async (id) => {
   qaRequest.status = 'in_progress';
   qaRequest.acceptedAt = new Date();
   await qaRequest.save();
+  emitQaUpdated(io, qaRequest);
   return qaRequest;
 };
 
-const rejectQaRequest = async (id, reason) => {
+const rejectQaRequest = async (id, reason, io) => {
   if (!reason || !reason.trim()) {
     throw new HttpError(400, 'Se requiere una razón de rechazo');
   }
@@ -284,13 +300,14 @@ const rejectQaRequest = async (id, reason) => {
     await qaSlackService.notifyQaUnassignable(qaRequest);
   }
 
+  emitQaUpdated(io, qaRequest);
   return qaRequest;
 };
 
 // Reopens a 'changes_requested' request for a second pass with the SAME
 // reviewer (no buildCandidates/pickReviewer run) — they already have context
 // on this ticket, so there's no reason to re-run assignment.
-const retryQaRequest = async (id) => {
+const retryQaRequest = async (id, io) => {
   const qaRequest = await QaRequest.findById(id);
   if (!qaRequest) throw new HttpError(404, 'Solicitud de QA no encontrada');
 
@@ -306,10 +323,11 @@ const retryQaRequest = async (id) => {
 
   await qaSlackService.notifyQaChangesAddressed(qaRequest);
 
+  emitQaUpdated(io, qaRequest);
   return qaRequest;
 };
 
-const completeQaRequest = async (id, result = 'approved') => {
+const completeQaRequest = async (id, result = 'approved', io) => {
   if (!['approved', 'changes_requested'].includes(result)) {
     throw new HttpError(400, "El resultado debe ser 'approved' o 'changes_requested'");
   }
@@ -323,6 +341,7 @@ const completeQaRequest = async (id, result = 'approved') => {
 
   await qaSlackService.notifyQaCompleted(qaRequest, result);
 
+  emitQaUpdated(io, qaRequest);
   return qaRequest;
 };
 

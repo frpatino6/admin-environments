@@ -104,6 +104,7 @@ router.get('/requests/:id', async (req, res) => {
 router.post('/requests', async (req, res) => {
   try {
     const { jiraKey, jiraSummary, jiraUrl, requesterId, environmentName, team } = req.body;
+    const io = req.app.get('io');
     const qaRequest = await qaRequestsService.createQaRequest({
       jiraKey,
       jiraSummary,
@@ -111,7 +112,7 @@ router.post('/requests', async (req, res) => {
       requesterId,
       environmentName,
       team
-    });
+    }, io);
     res.status(201).json(qaRequest);
   } catch (error) {
     handleError(res, error, 'Error al crear la solicitud de QA');
@@ -120,7 +121,8 @@ router.post('/requests', async (req, res) => {
 
 router.post('/requests/:id/start', async (req, res) => {
   try {
-    const qaRequest = await qaRequestsService.startQa(req.params.id);
+    const io = req.app.get('io');
+    const qaRequest = await qaRequestsService.startQa(req.params.id, io);
     res.json(qaRequest);
   } catch (error) {
     handleError(res, error, 'Error al iniciar la QA');
@@ -130,7 +132,8 @@ router.post('/requests/:id/start', async (req, res) => {
 router.post('/requests/:id/reject', async (req, res) => {
   try {
     const { reason } = req.body;
-    const qaRequest = await qaRequestsService.rejectQaRequest(req.params.id, reason);
+    const io = req.app.get('io');
+    const qaRequest = await qaRequestsService.rejectQaRequest(req.params.id, reason, io);
     res.json(qaRequest);
   } catch (error) {
     handleError(res, error, 'Error al rechazar la solicitud de QA');
@@ -139,7 +142,8 @@ router.post('/requests/:id/reject', async (req, res) => {
 
 router.post('/requests/:id/retry', async (req, res) => {
   try {
-    const qaRequest = await qaRequestsService.retryQaRequest(req.params.id);
+    const io = req.app.get('io');
+    const qaRequest = await qaRequestsService.retryQaRequest(req.params.id, io);
     res.json(qaRequest);
   } catch (error) {
     handleError(res, error, 'Error al reintentar la solicitud de QA');
@@ -149,7 +153,8 @@ router.post('/requests/:id/retry', async (req, res) => {
 router.post('/requests/:id/complete', async (req, res) => {
   try {
     const { result } = req.body;
-    const qaRequest = await qaRequestsService.completeQaRequest(req.params.id, result);
+    const io = req.app.get('io');
+    const qaRequest = await qaRequestsService.completeQaRequest(req.params.id, result, io);
     res.json(qaRequest);
   } catch (error) {
     handleError(res, error, 'Error al completar la solicitud de QA');

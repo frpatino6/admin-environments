@@ -105,6 +105,42 @@ curl -X POST http://localhost:3000/api/environments/dev4/release
 curl -X POST http://localhost:3000/api/environments/test4/release
 ```
 
+### QA - Comandos cURL
+
+```bash
+# Registrar un integrante de QA (por equipo)
+curl -X POST http://localhost:3000/api/qa/members \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Ana QA", "slackUserId": "U01234567", "team": "xqo"}'
+
+# Listar integrantes de QA de un equipo (orden = cola de asignación real)
+curl "http://localhost:3000/api/qa/members?team=xqo"
+
+# Solicitar QA para un ticket
+curl -X POST http://localhost:3000/api/qa/requests \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jiraKey": "ABC-123",
+    "jiraSummary": "Nueva funcionalidad de login",
+    "requesterId": "<id del QaMember solicitante>",
+    "environmentName": "dev4",
+    "team": "xqo"
+  }'
+
+# Rechazar una solicitud (reasigna automáticamente)
+curl -X POST http://localhost:3000/api/qa/requests/<id>/reject \
+  -H "Content-Type: application/json" \
+  -d '{"reason": "No tengo contexto de este módulo"}'
+
+# Iniciar la revisión
+curl -X POST http://localhost:3000/api/qa/requests/<id>/start
+
+# Completar la revisión
+curl -X POST http://localhost:3000/api/qa/requests/<id>/complete \
+  -H "Content-Type: application/json" \
+  -d '{"result": "approved"}'
+```
+
 ## 🔧 PowerShell Equivalentes
 
 ### Desplegar rama (PowerShell)
@@ -185,6 +221,12 @@ db.environments.find({name: "dev4"})
 ```
 
 ## 🧪 Testing
+
+### Ejecutar pruebas automatizadas del backend (QA)
+```bash
+cd backend
+node --test test/
+```
 
 ### Probar Slack Webhook
 ```bash
