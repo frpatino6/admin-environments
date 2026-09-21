@@ -192,9 +192,42 @@ const notifyQaCompleted = async (qaRequest, result) => {
   }
 };
 
+// Lets the requester know their QA request moved from pending to in_progress
+// — pings them so they know someone picked it up without checking the
+// dashboard. Plain text, no buttons — there's no action for the requester
+// to take from Slack at this point.
+const notifyQaStarted = async (qaRequest) => {
+  try {
+    if (!qaRequest.requesterId) {
+      console.log('QA: solicitud sin solicitante, no se envia notificacion Slack de inicio');
+      return;
+    }
+
+    const requester = await QaMember.findById(qaRequest.requesterId).select('slackUserId name');
+    if (!requester) {
+      console.log('QA: solicitante no encontrado, no se envia notificacion Slack de inicio');
+      return;
+    }
+
+    let reviewerName = 'un revisor';
+    if (qaRequest.reviewerId) {
+      const reviewer = await QaMember.findById(qaRequest.reviewerId).select('name');
+      if (reviewer) reviewerName = reviewer.name;
+    }
+
+    const webhookUrl = await getTeamWebhookUrl(qaRequest.team);
+    const text = `:eyes: QA iniciado para *${qaRequest.jiraKey}* — ${qaRequest.jiraSummary}. Revisando: ${reviewerName}. <@${requester.slackUserId}>`;
+
+    await postToSlack({ text }, webhookUrl);
+  } catch (error) {
+    console.error('Error preparando notificacion QA (inicio):', error.message);
+  }
+};
+
 module.exports = {
   notifyQaAssigned,
   notifyQaUnassignable,
   notifyQaCompleted,
-  notifyQaChangesAddressed
+  notifyQaChangesAddressed,
+  notifyQaStarted
 };

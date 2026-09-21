@@ -207,6 +207,7 @@ const startQa = async (id, io) => {
   qaRequest.status = 'in_progress';
   qaRequest.acceptedAt = new Date();
   await qaRequest.save();
+  await qaSlackService.notifyQaStarted(qaRequest);
   emitQaUpdated(io, qaRequest);
   return qaRequest;
 };
