@@ -131,13 +131,15 @@
         <button
           type="button"
           (click)="qaRequested.emit(env())"
-          title="Solicitar QA"
+          [disabled]="hasOpenQaRequest()"
+          [title]="hasOpenQaRequest() ? 'Ya existe una solicitud de QA para este ambiente' : 'Solicitar QA'"
           class="flex shrink-0 items-center justify-center gap-2 rounded-xl
                  border border-violet-500/30 bg-violet-500/10
                  px-4 py-3 text-sm font-medium text-violet-300
                  transition-all duration-200 ease-in-out
                  hover:scale-[1.02] hover:bg-violet-500/20
-                 active:scale-[0.98]">
+                 active:scale-[0.98]
+                 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100 disabled:hover:bg-violet-500/10 disabled:active:scale-100">
           <svg class="h-4 w-4 opacity-90" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
           </svg>
