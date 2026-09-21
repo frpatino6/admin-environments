@@ -61,6 +61,11 @@ export class EnvironmentCardComponent {
     }
   });
 
+  hasOpenQaRequest = computed(() => {
+    const req = this.qaRequest();
+    return !!req && req.status !== 'approved';
+  });
+
   constructor() {
     effect(() => {
       const name = this.env().name;
