@@ -2,6 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## CodeGraph (required)
+
+This repo is indexed by CodeGraph (`.codegraph/` at repo root). Always use it for reading and searching code here, instead of grep/find/Read as a first resort:
+
+- **MCP tool**: `codegraph_explore` — name a file or symbol in the query to get its verbatim, line-numbered source plus call paths (including dynamic-dispatch hops).
+- **Shell**: `codegraph explore "<symbol names or question>"` for the same output from the CLI.
+
+Keep the index in sync with `codegraph sync` (or `codegraph index` for a full rebuild) after significant file changes.
+
+## Code changes: always delegate to a subagent
+
+Any code modification (new files, edits, refactors) in this repo must be handed off to a subagent (`fork` if it should inherit the current conversation's context, otherwise a fresh agent with a self-contained brief) rather than edited directly in the main conversation. Keep the main thread for research, planning, and reviewing the subagent's result — not the implementation diffs themselves.
+
 ## Commands
 
 ### Backend (`backend/`)

@@ -1,11 +1,13 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { Subscription } from 'rxjs';
 import { QaMember, QaRequest } from '../../models/qa.model';
 import { QaService } from '../../services/qa.service';
+import { WebsocketService } from '../../services/websocket.service';
 import { QaRejectDialogComponent } from '../qa-reject-dialog/qa-reject-dialog.component';
 
 @Component({
@@ -15,9 +17,10 @@ import { QaRejectDialogComponent } from '../qa-reject-dialog/qa-reject-dialog.co
   templateUrl: './qa-dashboard.component.html',
   styleUrl: './qa-dashboard.component.scss',
 })
-export class QaDashboardComponent implements OnInit {
+export class QaDashboardComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private qaService = inject(QaService);
+  private wsService = inject(WebsocketService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private router = inject(Router);
@@ -45,14 +48,30 @@ export class QaDashboardComponent implements OnInit {
   // concurrent request.
   private pendingRejectIds = new Set<string>();
 
+  private wsSub?: Subscription;
+
   ngOnInit(): void {
     this.teamSlug.set(this.route.snapshot.paramMap.get('slug') ?? '');
     this.refresh();
+    this.setupWs();
+  }
+
+  ngOnDestroy(): void {
+    this.wsSub?.unsubscribe();
   }
 
   refresh(): void {
     this.refreshRequests();
     this.refreshMembers();
+  }
+
+  private setupWs(): void {
+    this.wsSub = this.wsService.onQaUpdate().subscribe({
+      next: (updated) => {
+        if (updated.team !== this.teamSlug()) return;
+        this.refreshRequests();
+      },
+    });
   }
 
   goToTeamDashboard(): void {
