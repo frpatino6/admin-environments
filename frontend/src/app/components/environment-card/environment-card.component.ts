@@ -66,6 +66,23 @@ export class EnvironmentCardComponent {
     return !!req && req.status !== 'approved';
   });
 
+  qaButtonLabel = computed(() => {
+    const req = this.qaRequest();
+    if (!req || req.status === 'approved') return 'Solicitar QA';
+    switch (req.status) {
+      case 'pending':
+        return 'QA pendiente';
+      case 'in_progress':
+        return 'QA iniciado';
+      case 'changes_requested':
+        return 'Cambios solicitados';
+      case 'unassignable':
+        return 'QA sin revisores';
+      default:
+        return 'Solicitar QA';
+    }
+  });
+
   constructor() {
     effect(() => {
       const name = this.env().name;
