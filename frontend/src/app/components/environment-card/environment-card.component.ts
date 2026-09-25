@@ -87,9 +87,11 @@ export class EnvironmentCardComponent {
     effect(() => {
       const name = this.env().name;
       const team = this.env().team;
+      const deployedAt = this.env().deployedAt;
+      const isOccupied = this.env().status === 'Ocupado';
       untracked(() => {
         this.loadHistory(team, name);
-        this.loadQaStatus(name);
+        this.loadQaStatus(name, deployedAt, isOccupied);
       });
     }, { allowSignalWrites: true });
   }
@@ -108,7 +110,7 @@ export class EnvironmentCardComponent {
     });
   }
 
-  private loadQaStatus(envName: string): void {
+  private loadQaStatus(envName: string, deployedAt: Date | null, isOccupied: boolean): void {
     // environmentName is unique per environment, so filtering by team is
     // unnecessary and actively wrong for shared environments (their
     // QaRequest documents carry the real occupying team, not the literal
@@ -117,7 +119,18 @@ export class EnvironmentCardComponent {
       next: (requests) => {
         // Backend returns requests sorted newest-first; show the most recent one
         // (including 'approved' — it's one of the chip states, not hidden).
-        this.qaRequest.set(requests[0] ?? null);
+        const latest = requests[0] ?? null;
+        // A QA request only belongs to the CURRENT occupation if it was created
+        // at/after this deploy started. If the environment is occupied and the
+        // newest request predates deployedAt, it's a leftover from a previous
+        // release/redeploy cycle for this same environment name — treat it as
+        // "no QA request yet" rather than showing stale status from a finished
+        // cycle. Environments that are Libre (deployedAt is null) keep showing
+        // their last historical QA status, unchanged from before this fix.
+        const isStaleFromPreviousDeploy =
+          isOccupied && !!deployedAt && !!latest &&
+          new Date(latest.createdAt as unknown as string).getTime() < new Date(deployedAt).getTime();
+        this.qaRequest.set(isStaleFromPreviousDeploy ? null : latest);
       },
       error: (err) => {
         console.error(`[Card:${envName}] QA status load failed:`, err);

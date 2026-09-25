@@ -10,7 +10,13 @@
       "Bash(npm run *)",
       "Bash(nvm list *)",
       "Bash(nvm use *)",
-      "PowerShell(nvm use *)"
+      "PowerShell(nvm use *)",
+      "Bash(npm test *)",
+      "Bash(node -e \"const j=require\\('./angular.json'\\); console.log\\(JSON.stringify\\(j.projects[Object.keys\\(j.projects\\)[0]].architect.test, null, 2\\)\\)\")",
+      "Read(//Applications/**)",
+      "Bash(python3 -m json.tool)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\({dev:p.devDependencies, dep:p.dependencies}, null, 2\\)\\)\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.devDependencies,null,2\\)\\)\")"
     ]
   }
 }

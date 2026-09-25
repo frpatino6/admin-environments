@@ -305,6 +305,51 @@ const rejectQaRequest = async (id, reason, io) => {
   return qaRequest;
 };
 
+// Manually moves a still-untouched request to a different reviewer, bypassing
+// pickReviewer — for operational overrides (someone's suddenly out, a bad
+// auto-assignment). Only allowed from 'pending': the assigned reviewer has a
+// request sitting with them but hasn't clicked "Iniciar QA" yet. Once they've
+// started (or the request has moved on to changes_requested/approved), or if
+// it never had a reviewer at all (unassignable), reassignment is refused —
+// unlike rejectQaRequest, this does NOT consult/append to rejections[] —
+// that array is specifically the automatic-reassignment exclusion history,
+// and a manual override is a distinct, human decision that may deliberately
+// pick someone who already rejected it.
+const reassignQaRequest = async (id, newReviewerId, io) => {
+  const qaRequest = await QaRequest.findById(id);
+  if (!qaRequest) throw new HttpError(404, 'Solicitud de QA no encontrada');
+
+  if (qaRequest.status !== 'pending') {
+    throw new HttpError(400, `No se puede reasignar: la solicitud está en estado '${qaRequest.status}'`);
+  }
+
+  const newReviewer = await QaMember.findById(newReviewerId);
+  if (!newReviewer) {
+    throw new HttpError(400, 'El revisor indicado no existe');
+  }
+  if (!newReviewer.active) {
+    throw new HttpError(400, 'El revisor indicado no está activo');
+  }
+  if (toIdString(newReviewer.team) !== toIdString(qaRequest.team)) {
+    throw new HttpError(400, 'El revisor no pertenece al equipo de esta solicitud');
+  }
+  if (toIdString(newReviewerId) === toIdString(qaRequest.requesterId)) {
+    throw new HttpError(400, 'No se puede reasignar al mismo solicitante');
+  }
+
+  qaRequest.reviewerId = newReviewerId;
+  qaRequest.status = 'pending';
+  qaRequest.assignedAt = new Date();
+  qaRequest.lastReminderAt = null;
+  await qaRequest.save();
+
+  await QaMember.findByIdAndUpdate(newReviewerId, { lastAssignedAt: new Date() });
+  await qaSlackService.notifyQaAssigned(qaRequest);
+
+  emitQaUpdated(io, qaRequest);
+  return qaRequest;
+};
+
 // Reopens a 'changes_requested' request for a second pass with the SAME
 // reviewer (no buildCandidates/pickReviewer run) — they already have context
 // on this ticket, so there's no reason to re-run assignment.
@@ -378,6 +423,7 @@ module.exports = {
   createQaRequest,
   startQa,
   rejectQaRequest,
+  reassignQaRequest,
   retryQaRequest,
   completeQaRequest,
   sendOverdueReminders

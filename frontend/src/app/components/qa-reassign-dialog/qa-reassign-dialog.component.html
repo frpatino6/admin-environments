@@ -1,0 +1,58 @@
+<div class="relative overflow-hidden rounded-2xl border border-white/15 bg-[#0f0f2a]/95 px-10 py-8 shadow-glass-lg backdrop-blur-[16px]">
+  <!-- Top glow line -->
+  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-500/40 to-transparent"></div>
+
+  <!-- Header -->
+  <div class="mb-6 flex items-center gap-3">
+    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/15 ring-1 ring-sky-500/25">
+      <svg class="h-5 w-5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+      </svg>
+    </div>
+    <div>
+      <h2 class="text-base font-bold text-white">Reasignar QA de {{ data.jiraKey }}</h2>
+      <p class="text-xs text-slate-500">Elige manualmente el nuevo revisor — la solicitud vuelve a pendiente</p>
+    </div>
+  </div>
+
+  <!-- Field -->
+  <div>
+    <label class="mb-1.5 block text-xs font-medium text-slate-400">Nuevo revisor</label>
+    @if (loadingMembers()) {
+      <div class="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 px-4 text-sm text-slate-600">
+        Cargando integrantes de QA…
+      </div>
+    } @else {
+      <select
+        [ngModel]="selectedReviewerId()"
+        (ngModelChange)="selectedReviewerId.set($event)"
+        class="w-full appearance-none rounded-xl border border-white/10 bg-white/5 py-2.5 px-4 text-sm text-white outline-none transition-all duration-200 focus:border-sky-500/40 focus:bg-white/[0.07] focus:ring-1 focus:ring-sky-500/25">
+        <option value="" disabled class="bg-[#0f0f2a] text-slate-600">Selecciona un revisor</option>
+        @for (member of members(); track member._id) {
+          <option [value]="member._id" class="bg-[#0f0f2a] text-white">{{ member.name }}</option>
+        }
+      </select>
+      @if (members().length === 0) {
+        <p class="mt-1.5 text-xs text-amber-400/80">No hay integrantes de QA activos disponibles.</p>
+      }
+    }
+  </div>
+
+  <!-- Actions -->
+  <div class="mt-8 flex gap-3">
+    <button
+      (click)="onCancel()"
+      class="flex flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-slate-400 transition-all duration-200 hover:bg-white/10 hover:text-slate-200">
+      Cancelar
+    </button>
+    <button
+      (click)="onConfirm()"
+      [disabled]="!isValid()"
+      class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-200 hover:scale-[1.02] hover:shadow-sky-500/25 disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.98]">
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+      </svg>
+      Reasignar
+    </button>
+  </div>
+</div>
