@@ -140,6 +140,17 @@ router.post('/requests/:id/reject', async (req, res) => {
   }
 });
 
+router.post('/requests/:id/reassign', async (req, res) => {
+  try {
+    const { reviewerId } = req.body;
+    const io = req.app.get('io');
+    const qaRequest = await qaRequestsService.reassignQaRequest(req.params.id, reviewerId, io);
+    res.json(qaRequest);
+  } catch (error) {
+    handleError(res, error, 'Error al reasignar la solicitud de QA');
+  }
+});
+
 router.post('/requests/:id/retry', async (req, res) => {
   try {
     const io = req.app.get('io');

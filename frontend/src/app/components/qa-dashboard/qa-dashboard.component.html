@@ -128,8 +128,14 @@
                           Pedir revisión de nuevo
                         </button>
                       }
-                      @if (req.status === 'unassignable' || req.status === 'approved') {
+                      @if (req.status === 'approved' || req.status === 'unassignable') {
                         <span class="text-xs text-slate-600">—</span>
+                      }
+                      @if (req.status === 'pending') {
+                        <button (click)="onReassign(req)"
+                          class="rounded-lg border border-sky-500/30 bg-sky-500/10 px-2.5 py-1.5 text-xs font-medium text-sky-300 transition-all hover:bg-sky-500/20">
+                          Reasignar
+                        </button>
                       }
                     </div>
                   </td>

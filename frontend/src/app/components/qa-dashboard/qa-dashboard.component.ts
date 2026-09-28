@@ -9,6 +9,7 @@ import { QaMember, QaRequest } from '../../models/qa.model';
 import { QaService } from '../../services/qa.service';
 import { WebsocketService } from '../../services/websocket.service';
 import { QaRejectDialogComponent } from '../qa-reject-dialog/qa-reject-dialog.component';
+import { QaReassignDialogComponent } from '../qa-reassign-dialog/qa-reassign-dialog.component';
 
 @Component({
   selector: 'app-qa-dashboard',
@@ -120,6 +121,11 @@ export class QaDashboardComponent implements OnInit, OnDestroy {
     return entity.name;
   }
 
+  private idOf(entity: QaMember | string | null | undefined): string | null {
+    if (!entity) return null;
+    return typeof entity === 'string' ? entity : entity._id;
+  }
+
   statusLabel(req: QaRequest): string {
     switch (req.status) {
       case 'pending':
@@ -172,6 +178,27 @@ export class QaDashboardComponent implements OnInit, OnDestroy {
         });
       } else {
         this.pendingRejectIds.delete(req._id);
+      }
+    });
+  }
+
+  onReassign(req: QaRequest): void {
+    const ref = this.dialog.open(QaReassignDialogComponent, {
+      width: '480px',
+      panelClass: 'glass-dialog',
+      data: {
+        jiraKey: req.jiraKey,
+        team: this.teamSlug(),
+        currentReviewerId: this.idOf(req.reviewerId),
+        requesterId: this.idOf(req.requesterId),
+      },
+    });
+    ref.afterClosed().subscribe((reviewerId: string | undefined) => {
+      if (reviewerId) {
+        this.qaService.reassignRequest(req._id, reviewerId).subscribe({
+          next: () => { this.notify('Solicitud reasignada'); this.refreshRequests(); },
+          error: (e) => this.notify(e.error?.message ?? 'Error al reasignar la solicitud'),
+        });
       }
     });
   }

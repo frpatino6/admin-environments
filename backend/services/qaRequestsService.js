@@ -2,6 +2,7 @@ const QaMember = require('../models/QaMember');
 const QaRequest = require('../models/QaRequest');
 const { pickReviewer, compareByQueuePriority } = require('./qaAssignment');
 const qaSlackService = require('./qaSlackService');
+const { getReminderSchedule, isWithinReminderWindow } = require('./qaReminderSchedule');
 
 const ACTIVE_QA_STATUSES = ['pending', 'in_progress'];
 
@@ -305,6 +306,51 @@ const rejectQaRequest = async (id, reason, io) => {
   return qaRequest;
 };
 
+// Manually moves a still-untouched request to a different reviewer, bypassing
+// pickReviewer — for operational overrides (someone's suddenly out, a bad
+// auto-assignment). Only allowed from 'pending': the assigned reviewer has a
+// request sitting with them but hasn't clicked "Iniciar QA" yet. Once they've
+// started (or the request has moved on to changes_requested/approved), or if
+// it never had a reviewer at all (unassignable), reassignment is refused —
+// unlike rejectQaRequest, this does NOT consult/append to rejections[] —
+// that array is specifically the automatic-reassignment exclusion history,
+// and a manual override is a distinct, human decision that may deliberately
+// pick someone who already rejected it.
+const reassignQaRequest = async (id, newReviewerId, io) => {
+  const qaRequest = await QaRequest.findById(id);
+  if (!qaRequest) throw new HttpError(404, 'Solicitud de QA no encontrada');
+
+  if (qaRequest.status !== 'pending') {
+    throw new HttpError(400, `No se puede reasignar: la solicitud está en estado '${qaRequest.status}'`);
+  }
+
+  const newReviewer = await QaMember.findById(newReviewerId);
+  if (!newReviewer) {
+    throw new HttpError(400, 'El revisor indicado no existe');
+  }
+  if (!newReviewer.active) {
+    throw new HttpError(400, 'El revisor indicado no está activo');
+  }
+  if (toIdString(newReviewer.team) !== toIdString(qaRequest.team)) {
+    throw new HttpError(400, 'El revisor no pertenece al equipo de esta solicitud');
+  }
+  if (toIdString(newReviewerId) === toIdString(qaRequest.requesterId)) {
+    throw new HttpError(400, 'No se puede reasignar al mismo solicitante');
+  }
+
+  qaRequest.reviewerId = newReviewerId;
+  qaRequest.status = 'pending';
+  qaRequest.assignedAt = new Date();
+  qaRequest.lastReminderAt = null;
+  await qaRequest.save();
+
+  await QaMember.findByIdAndUpdate(newReviewerId, { lastAssignedAt: new Date() });
+  await qaSlackService.notifyQaAssigned(qaRequest);
+
+  emitQaUpdated(io, qaRequest);
+  return qaRequest;
+};
+
 // Reopens a 'changes_requested' request for a second pass with the SAME
 // reviewer (no buildCandidates/pickReviewer run) — they already have context
 // on this ticket, so there's no reason to re-run assignment.
@@ -349,7 +395,27 @@ const completeQaRequest = async (id, result = 'approved', io) => {
 // Background job entry point: re-sends the assignment notification (does NOT
 // reassign) for every still-pending request whose last touch (assignedAt, or
 // lastReminderAt once one has been sent) is older than intervalHours.
-const sendOverdueReminders = async (intervalHours) => {
+//
+// `options` exists so tests can pin the instant and the window (the job passes
+// only the schedule it already resolved at startup).
+//
+// `now` and `schedule` are resolved here rather than left to the caller because
+// the business-hours gate lives HERE, not just in the job: this is the function
+// that mutates lastReminderAt/escalatedCount and posts to Slack, so this is
+// where "no reminder ever leaves outside the window" has to be guaranteed, even
+// if some future caller skips the job and calls the service directly.
+const sendOverdueReminders = async (intervalHours, options = {}) => {
+  const schedule = options.schedule || getReminderSchedule();
+  const now = options.now || new Date();
+
+  // Outside the window (nights, weekends, holidays-by-configuration) nothing
+  // is sent at all — deliberately not queued or deferred: a request that goes
+  // stale at 22:00 on Friday simply gets no reminder that weekend, and is
+  // picked up normally by the next sweep once the window reopens. The gate
+  // runs before any query and before any Slack call, so a closed window also
+  // leaves lastReminderAt/escalatedCount untouched.
+  if (!isWithinReminderWindow(now, schedule)) return 0;
+
   const cutoff = new Date(Date.now() - intervalHours * 60 * 60 * 1000);
   const overdue = await QaRequest.find({
     status: 'pending',
@@ -378,6 +444,7 @@ module.exports = {
   createQaRequest,
   startQa,
   rejectQaRequest,
+  reassignQaRequest,
   retryQaRequest,
   completeQaRequest,
   sendOverdueReminders

@@ -78,11 +78,12 @@ MongoDB Atlas
   - `rejectQaRequest` — records the rejection, excludes **every** member who has ever rejected this request (not just the most recent), reassigns via `pickReviewer`, and applies the whole "record rejection + reassign" step as one atomic `findOneAndUpdate` guarded on the previous `reviewerId` — a concurrent double-reject gets a clean 409 instead of computing a reassignment off stale data.
   - `retryQaRequest` — reopens a `changes_requested` request back to `pending` for the **same** reviewer (no reassignment — they already have context).
   - `completeQaRequest` — marks `approved` or `changes_requested`.
-  - `sendOverdueReminders` — background job entry point; **resends** (never reassigns) the assignment notification for stale `pending` requests.
+  - `sendOverdueReminders` — background job entry point; **resends** (never reassigns) the assignment notification for stale `pending` requests. Its very first step is the business-hours gate below — outside the window it returns `0` before any query or Slack call, so no `lastReminderAt`/`escalatedCount` is ever touched out of hours, and nothing is queued or deferred (a request that goes stale Friday at 22:00 just gets no reminder that weekend). Takes an optional second argument (`{ now, schedule }`) purely so tests can pin the instant and the window; the job passes only the schedule it already resolved at startup. The gate lives here, not only in the job, so the guarantee holds for any future caller.
   - Defensive invariant checks throw a 500 if a reviewer is ever picked as their own requester (should be unreachable given the exclusion logic, but fails loudly instead of silently saving a broken assignment).
 - **`services/qaSlackService.js`** — notifies via the team's *existing* `Team.slackWebhookUrl` Incoming Webhook, the same one deploy/release notifications already use. Messages carry two plain `url`-type Block Kit buttons, **"Iniciar QA" and "Rechazar"**, linking to `${FRONTEND_BASE_URL}/qa/requests/:id/start` and `.../reject` — pages in the deployed frontend, not a Slack interaction callback. **This needs zero additional Slack App configuration: no bot token, no Interactivity, no Signing Secret.** That was a deliberate, hard-won design decision — don't add Slack App config for this feature; if a reviewer needs to act, they click a link that opens the app.
 - **`routes/qa.js`** — `GET/POST /api/qa/members`, `PATCH /api/qa/members/:id/active`, `GET /api/qa/requests` (+ `/:id`), `POST /api/qa/requests`, `POST /api/qa/requests/:id/start|reject|retry|complete`. `/members` always requires `?team=`.
-- **`jobs/qaEscalation.js`** — plain `setInterval` sweep (no cron dependency), started from `server.js`. Every `QA_ESCALATION_CHECK_INTERVAL_MIN` minutes, resends the Slack notification for any `pending` request whose last touch (`assignedAt`, or `lastReminderAt` once one has been sent) is older than `QA_REMINDER_INTERVAL_HOURS`.
+- **`services/qaReminderSchedule.js`** — pure, DB-free business-hours window for reminders (no dependencies beyond `Intl`): `getReminderSchedule()` reads/normalizes `QA_REMINDER_TIMEZONE` / `QA_REMINDER_START_HOUR` / `QA_REMINDER_END_HOUR` / `QA_REMINDER_WEEKDAYS` (each invalid part `console.warn`s and falls back to its default — bad env config can never crash the boot), `isWithinReminderWindow(date, schedule)` is the decision itself (takes the instant and the schedule explicitly and never reads `process.env`, so it's deterministic in tests), and `describeReminderSchedule()` renders it for logs (`lun-vie 09:00-18:00 (America/Mexico_City)`). Default: **Monday–Friday, 09:00–18:00, in `QA_REMINDER_TIMEZONE`**. Conventions worth knowing: weekdays are **ISO numbers, 1 = Monday … 7 = Sunday**; the end hour is **exclusive** (18:00 is already outside, last reminder at 17:59); the weekday is derived from the calendar date (`Date.UTC(y, m-1, d)` + `getUTCDay()`, `0 → 7`) instead of parsing `Intl`'s localized weekday name, which would be locale/ICU-dependent; the timezone is always from the env var, never the server clock.
+- **`jobs/qaEscalation.js`** — plain `setInterval` sweep (no cron dependency), started from `server.js`. Every `QA_ESCALATION_CHECK_INTERVAL_MIN` minutes, resends the Slack notification for any `pending` request whose last touch (`assignedAt`, or `lastReminderAt` once one has been sent) is older than `QA_REMINDER_INTERVAL_HOURS` — **but only while the reminder window above is open**; when it is closed the job skips the call entirely (no query) and logs the paused state only on the transition, since it wakes up ~96×/day.
 
 **Frontend (`frontend/src/app/`):**
 
@@ -102,9 +103,15 @@ FRONTEND_BASE_URL=http://localhost:4200   # used to build the Slack action-butto
 JIRA_BASE_URL=                            # optional; renders jiraKey as a link (string concat, no Jira API call)
 QA_REMINDER_INTERVAL_HOURS=4              # how long a pending request goes untouched before a reminder resends
 QA_ESCALATION_CHECK_INTERVAL_MIN=15       # how often the background job checks for overdue requests
+QA_REMINDER_TIMEZONE=America/Mexico_City  # IANA zone the reminder window is expressed in (default: server zone)
+QA_REMINDER_START_HOUR=9                   # window start, inclusive
+QA_REMINDER_END_HOUR=18                    # window end, EXCLUSIVE (last reminder at 17:59)
+QA_REMINDER_WEEKDAYS=1,2,3,4,5             # ISO weekdays: 1=lunes … 7=domingo
 ```
 
-**Tests:** `backend/test/` (run via `cd backend && node --test test/`) — this backend's first automated test infrastructure; everything before it was manual curl walkthroughs (see `TESTING.md`).
+The last four only gate the **reminder** message. The initial assignment, start, reject, completed and changes-addressed notifications are unaffected and still fire at any hour.
+
+**Tests:** `backend/test/` (run via `cd backend && node --test test/`) — this backend's first automated test infrastructure; everything before it was manual curl walkthroughs (see `TESTING.md`). `qaReminderSchedule.test.js` covers the reminder window as a pure module (no MongoDB needed) and `qaRequestsReminderWindow.test.js` covers the gate inside `sendOverdueReminders` against the real database.
 
 ## Environment Variables
 

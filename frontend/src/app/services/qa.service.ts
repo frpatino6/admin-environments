@@ -54,6 +54,10 @@ export class QaService {
     return this.http.post<QaRequest>(`${this.baseUrl}/requests/${id}/reject`, { reason });
   }
 
+  reassignRequest(id: string, reviewerId: string): Observable<QaRequest> {
+    return this.http.post<QaRequest>(`${this.baseUrl}/requests/${id}/reassign`, { reviewerId });
+  }
+
   retryRequest(id: string): Observable<QaRequest> {
     return this.http.post<QaRequest>(`${this.baseUrl}/requests/${id}/retry`, {});
   }

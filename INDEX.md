@@ -46,7 +46,8 @@
 | [backend/services/qaAssignment.js](backend/services/qaAssignment.js) | Algoritmo puro de asignación de revisor |
 | [backend/services/qaRequestsService.js](backend/services/qaRequestsService.js) | Lógica de negocio de solicitudes de QA |
 | [backend/services/qaSlackService.js](backend/services/qaSlackService.js) | Notificaciones de QA a Slack |
-| [backend/jobs/qaEscalation.js](backend/jobs/qaEscalation.js) | Job de recordatorios de QA vencidos |
+| [backend/services/qaReminderSchedule.js](backend/services/qaReminderSchedule.js) | Horario de negocio para los recordatorios de QA (configurable por env) |
+| [backend/jobs/qaEscalation.js](backend/jobs/qaEscalation.js) | Job de recordatorios de QA vencidos (solo dentro del horario configurado) |
 | [backend/test/](backend/test/) | Pruebas automatizadas de QA (`node --test test/`) |
 
 ## 🎨 Frontend
