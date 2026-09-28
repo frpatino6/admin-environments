@@ -5,6 +5,33 @@ Todos los cambios notables de este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-09-28
+
+### 🎉 Horario de Negocio para los Recordatorios de QA
+
+El job de escalación enviaba recordatorios las 24 horas, todos los días, y saturaba el canal de Slack del equipo durante los fines de semana. Ahora los recordatorios solo se envían dentro de una ventana de horario de negocio configurable (lunes a viernes, 09:00-18:00 por defecto).
+
+### ✨ Agregado
+
+#### Backend
+- `services/qaReminderSchedule.js`: módulo puro (sin base de datos ni dependencias) que resuelve la ventana de recordatorios desde variables de entorno y decide, para un instante dado, si el recordatorio puede enviarse. Sin dependencias nuevas: solo `Intl`
+- El día de la semana se configura con **números ISO** (1 = lunes … 7 = domingo) y la hora final es **exclusiva** (con `9`–`18` el último recordatorio sale a las 17:59)
+- La zona horaria se toma de `QA_REMINDER_TIMEZONE`, nunca del reloj del servidor; si no es válida se ignora con un warning y se usa la zona del servidor
+- Cualquier valor mal configurado (horas no numéricas o fuera de rango, hora final ≤ hora inicial, zona IANA inexistente, lista de días vacía o inválida) genera un warning y cae al valor por defecto: una variable mal escrita nunca puede tumbar el arranque
+- Nuevas variables de entorno: `QA_REMINDER_TIMEZONE`, `QA_REMINDER_START_HOUR`, `QA_REMINDER_END_HOUR`, `QA_REMINDER_WEEKDAYS`
+- Pruebas del módulo puro (`qaReminderSchedule.test.js`, sin MongoDB) y de la compuerta dentro de `sendOverdueReminders` (`qaRequestsReminderWindow.test.js`, contra la base de datos real)
+
+### 🔧 Cambiado
+
+#### Backend
+- `sendOverdueReminders` ahora verifica la ventana **antes de cualquier consulta o llamada a Slack**: fuera de ella devuelve `0` y no toca ni `lastReminderAt` ni `escalatedCount`. La compuerta vive en el servicio (y no solo en el job) para que la garantía se cumpla aunque alguien lo invoque directamente
+- Fuera de la ventana no se envía ni se acumula nada: una solicitud que se quedó parada el viernes a las 22:00 no recibe recordatorios ese fin de semana, y el siguiente barrido dentro del horario la retoma con normalidad (sin ráfaga de catch-up)
+- `jobs/qaEscalation.js` salta la llamada por completo cuando la ventana está cerrada (ni siquiera consulta la base de datos) y registra el estado pausado solo en la transición, ya que despierta ~96 veces al día. La línea de arranque ahora incluye el horario configurado
+- Esta ventana aplica **únicamente al recordatorio**: la asignación inicial y las notificaciones de inicio, rechazo, completado y cambios atendidos se siguen enviando a cualquier hora
+
+#### Documentación
+- `backend/.env.example`, `docs/CLAUDE.md`, `docs/README.md` e `INDEX.md` actualizados con las nuevas variables y el módulo de horario
+
 ## [1.1.0] - 2026-09-18
 
 ### 🎉 Flujo de Solicitud y Revisión de QA

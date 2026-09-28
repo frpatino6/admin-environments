@@ -2,6 +2,7 @@ const QaMember = require('../models/QaMember');
 const QaRequest = require('../models/QaRequest');
 const { pickReviewer, compareByQueuePriority } = require('./qaAssignment');
 const qaSlackService = require('./qaSlackService');
+const { getReminderSchedule, isWithinReminderWindow } = require('./qaReminderSchedule');
 
 const ACTIVE_QA_STATUSES = ['pending', 'in_progress'];
 
@@ -394,7 +395,27 @@ const completeQaRequest = async (id, result = 'approved', io) => {
 // Background job entry point: re-sends the assignment notification (does NOT
 // reassign) for every still-pending request whose last touch (assignedAt, or
 // lastReminderAt once one has been sent) is older than intervalHours.
-const sendOverdueReminders = async (intervalHours) => {
+//
+// `options` exists so tests can pin the instant and the window (the job passes
+// only the schedule it already resolved at startup).
+//
+// `now` and `schedule` are resolved here rather than left to the caller because
+// the business-hours gate lives HERE, not just in the job: this is the function
+// that mutates lastReminderAt/escalatedCount and posts to Slack, so this is
+// where "no reminder ever leaves outside the window" has to be guaranteed, even
+// if some future caller skips the job and calls the service directly.
+const sendOverdueReminders = async (intervalHours, options = {}) => {
+  const schedule = options.schedule || getReminderSchedule();
+  const now = options.now || new Date();
+
+  // Outside the window (nights, weekends, holidays-by-configuration) nothing
+  // is sent at all — deliberately not queued or deferred: a request that goes
+  // stale at 22:00 on Friday simply gets no reminder that weekend, and is
+  // picked up normally by the next sweep once the window reopens. The gate
+  // runs before any query and before any Slack call, so a closed window also
+  // leaves lastReminderAt/escalatedCount untouched.
+  if (!isWithinReminderWindow(now, schedule)) return 0;
+
   const cutoff = new Date(Date.now() - intervalHours * 60 * 60 * 1000);
   const overdue = await QaRequest.find({
     status: 'pending',

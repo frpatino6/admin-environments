@@ -272,7 +272,13 @@ FRONTEND_BASE_URL=http://localhost:4200
 JIRA_BASE_URL=
 QA_REMINDER_INTERVAL_HOURS=4
 QA_ESCALATION_CHECK_INTERVAL_MIN=15
+QA_REMINDER_TIMEZONE=America/Mexico_City
+QA_REMINDER_START_HOUR=9
+QA_REMINDER_END_HOUR=18
+QA_REMINDER_WEEKDAYS=1,2,3,4,5
 ```
+
+> Los recordatorios de QA solo se envían dentro del horario de `QA_REMINDER_START_HOUR` a `QA_REMINDER_END_HOUR` (hora final **excluida**: con `9`–`18` el último recordatorio sale a las 17:59) y en los días de `QA_REMINDER_WEEKDAYS`, escritos como **números ISO de día de la semana (1 = lunes … 7 = domingo)**. Fuera de ese horario el job ni siquiera consulta la base de datos: no se envía nada y no se acumula nada para después — una solicitud que se quedó parada a las 22:00 del viernes simplemente no recibe recordatorios ese fin de semana. `QA_REMINDER_TIMEZONE` define la zona horaria (IANA) en la que se cuenta ese horario, así que debe configurarse con la zona real del equipo. Todo esto aplica **solo al recordatorio**: la asignación inicial y las notificaciones de inicio, rechazo, completado y cambios atendidos se envían siempre.
 
 > No se requiere ninguna configuración adicional de Slack (sin bot token, sin Interactivity habilitada): los botones "Iniciar QA" y "Rechazar" son enlaces que abren páginas del frontend desplegado, y las notificaciones reutilizan el mismo Incoming Webhook por equipo que ya usan despliegues y releases. Ver [SLACK_SETUP.md](SLACK_SETUP.md).
 
