@@ -79,6 +79,11 @@ export class QaDashboardComponent implements OnInit, OnDestroy {
   // Windowing rule: always the first and the last page, plus the current page
   // and its two neighbours on each side (clamped to the range), deduped and
   // sorted — at most 7 numbered buttons, with a "…" wherever the run has a gap.
+  //
+  // 1-BASED, on purpose: these are the labels the user reads, so the template
+  // must convert to a 0-based index when calling goToPage. pageIndex itself
+  // stays 0-based; the two numbering schemes meeting in the same template is
+  // exactly the off-by-one this page originally shipped with.
   pageNumbers = computed(() => {
     const last = this.pageCount();
     const current = this.safePageIndex();
