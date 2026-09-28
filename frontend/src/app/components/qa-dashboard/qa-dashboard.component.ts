@@ -30,8 +30,79 @@ export class QaDashboardComponent implements OnInit, OnDestroy {
   // member shown/managed here belongs to this one team's roster.
   teamSlug = signal('');
 
+  // Rows per page in the queue table. The whole queue is already loaded in
+  // memory (getRequests has no server-side pagination), so this constant is
+  // the only thing keeping the page from growing without bounds. 4 is
+  // deliberately small: row height is not uniform because the actions cell
+  // wraps to one or two lines depending on status, and a fatter page count
+  // would simply make the page tall again.
+  readonly REQUESTS_PAGE_SIZE = 4;
+
   requests = signal<QaRequest[]>([]);
   loadingRequests = signal(true);
+
+  // Zero-based page currently shown in the queue table. Reset to 0 on every
+  // successful load so a request pushed over the WebSocket is visible right
+  // away instead of landing off-screen on page 2/3.
+  pageIndex = signal(0);
+
+  // Floor of 1 so an empty queue still has a (never rendered) page 0 and the
+  // controls never have to special-case a zero page count.
+  pageCount = computed(() => Math.max(1, Math.ceil(this.requests().length / this.REQUESTS_PAGE_SIZE)));
+
+  // The index every read goes through, clamped to the last page: a list that
+  // shrank under a stale index then shows that last page (possibly short)
+  // instead of a header row with an empty body.
+  private safePageIndex = computed(() =>
+    Math.min(Math.max(this.pageIndex(), 0), this.pageCount() - 1),
+  );
+
+  pagedRequests = computed(() => {
+    const start = this.safePageIndex() * this.REQUESTS_PAGE_SIZE;
+    return this.requests().slice(start, start + this.REQUESTS_PAGE_SIZE);
+  });
+
+  // "Mostrando X–Y de Z" bounds; 0–0 while the queue is empty.
+  rangeStart = computed(() => {
+    const total = this.requests().length;
+    return total === 0 ? 0 : this.safePageIndex() * this.REQUESTS_PAGE_SIZE + 1;
+  });
+
+  rangeEnd = computed(() => {
+    const total = this.requests().length;
+    return total === 0 ? 0 : Math.min(this.rangeStart() - 1 + this.REQUESTS_PAGE_SIZE, total);
+  });
+
+  // A queue that fits in a single page gets no control block at all.
+  showPagination = computed(() => this.requests().length > this.REQUESTS_PAGE_SIZE);
+
+  // Windowing rule: always the first and the last page, plus the current page
+  // and its two neighbours on each side (clamped to the range), deduped and
+  // sorted — at most 7 numbered buttons, with a "…" wherever the run has a gap.
+  pageNumbers = computed(() => {
+    const last = this.pageCount();
+    const current = this.safePageIndex();
+    const wanted = [1, last, current - 2, current - 1, current, current + 1, current + 2];
+    return [...new Set(wanted.filter((p) => p >= 1 && p <= last))].sort((a, b) => a - b);
+  });
+
+  // A "…" belongs *between* two numbers of the run, so the leading gap is the
+  // hole right after page 1 and the trailing one the hole right before the
+  // last page. With 3 pages the run is [1,2,3] and neither fires.
+  hasLeadingGap = computed(() => this.pageNumbers()[1] > 2);
+
+  hasTrailingGap = computed(() => {
+    const run = this.pageNumbers();
+    return run[run.length - 2] < this.pageCount() - 1;
+  });
+
+  // The only way the page index is written apart from the load reset: clamping
+  // here (instead of at each call site) means prev/next/number clicks can
+  // never push the index below 0 or past the last page, whatever the list did
+  // since the click.
+  goToPage(index: number): void {
+    this.pageIndex.set(Math.min(Math.max(index, 0), this.pageCount() - 1));
+  }
 
   members = signal<QaMember[]>([]);
   loadingMembers = signal(true);
@@ -84,6 +155,13 @@ export class QaDashboardComponent implements OnInit, OnDestroy {
     this.qaService.getRequests({ team: this.teamSlug() }).subscribe({
       next: (data) => {
         this.requests.set(data);
+        // Back to page 1 on every successful load, on purpose: a request
+        // arriving over the WebSocket sits at the top of the queue, and
+        // staying on page 2/3 would hide it. Owned here rather than in the
+        // socket handler so the "Actualizar" button and the WS push follow one
+        // rule. Not done on error, and not done by goToPage — paging is not a
+        // reload, so it must not scroll the user back.
+        this.pageIndex.set(0);
         this.loadingRequests.set(false);
       },
       error: () => {

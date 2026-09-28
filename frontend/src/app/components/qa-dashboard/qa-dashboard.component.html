@@ -73,7 +73,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-white/5">
-              @for (req of requests(); track req._id) {
+              @for (req of pagedRequests(); track req._id) {
                 <tr class="align-top">
                   <td class="py-3 pr-4">
                     <p class="font-mono text-sm font-medium text-violet-300">{{ req.jiraKey }}</p>
@@ -144,6 +144,51 @@
             </tbody>
           </table>
         </div>
+
+        @if (showPagination()) {
+          <div class="mt-5 flex flex-col items-start gap-3 border-t border-white/5 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-xs text-slate-500">
+              Mostrando {{ rangeStart() }}–{{ rangeEnd() }} de {{ requests().length }}
+            </p>
+
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button type="button" (click)="goToPage(pageIndex() - 1)" [disabled]="pageIndex() === 0"
+                aria-label="Página anterior"
+                class="group inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-slate-400 transition-all duration-200 hover:bg-white/[0.08] hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white/[0.04] disabled:hover:text-slate-400">
+                <svg class="h-3.5 w-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                </svg>
+              </button>
+
+              @if (hasLeadingGap()) {
+                <span class="px-1 text-xs text-slate-600">…</span>
+              }
+
+              @for (p of pageNumbers(); track p) {
+                <button type="button" (click)="goToPage(p)"
+                  [attr.aria-current]="p === pageIndex() + 1 ? 'page' : null"
+                  class="inline-flex h-7 min-w-[1.75rem] items-center justify-center rounded-lg border px-2 text-xs font-medium transition-all duration-200"
+                  [ngClass]="p === pageIndex() + 1
+                    ? 'border-violet-500/25 bg-violet-500/15 text-violet-300'
+                    : 'border-white/10 bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200'">
+                  {{ p }}
+                </button>
+              }
+
+              @if (hasTrailingGap()) {
+                <span class="px-1 text-xs text-slate-600">…</span>
+              }
+
+              <button type="button" (click)="goToPage(pageIndex() + 1)" [disabled]="pageIndex() >= pageCount() - 1"
+                aria-label="Página siguiente"
+                class="group inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-slate-400 transition-all duration-200 hover:bg-white/[0.08] hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-white/[0.04] disabled:hover:text-slate-400">
+                <svg class="h-3.5 w-3.5 rotate-180 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        }
       }
     </section>
 
