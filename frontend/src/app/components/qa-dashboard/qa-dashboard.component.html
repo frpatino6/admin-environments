@@ -165,7 +165,7 @@
               }
 
               @for (p of pageNumbers(); track p) {
-                <button type="button" (click)="goToPage(p)"
+                <button type="button" (click)="goToPage(p - 1)"
                   [attr.aria-current]="p === pageIndex() + 1 ? 'page' : null"
                   class="inline-flex h-7 min-w-[1.75rem] items-center justify-center rounded-lg border px-2 text-xs font-medium transition-all duration-200"
                   [ngClass]="p === pageIndex() + 1
